@@ -2,7 +2,7 @@
 
 A minimal go project bootstrapping tool
 
-    Usage of D:\code\go\gopher\gopher.exe:
+    Usage:
       -init string
             bootstrap a new project with a given name
       -version
