@@ -10,6 +10,34 @@ A minimal go project bootstrapping tool
       -wrap string
             build the project and zip it (windows only for now)
 
+## Using the tool
+
+To create a new go project run:
+
+    gopher init name
+
+This will:
+
+- create a folder `name`
+- inside it will:
+  - run `go mod init name`
+  - create `.gitignore` file
+  - create `README.md` file
+  - create `name.go` with simple hello world code
+  - run `git init -b main`
+ 
+To build the project and generate zip file with the executable run:
+
+    gopher wrap name
+
+This must be run in the project directory. It will:
+
+- run `go build`
+- zip up `name.exe` and create `name_win.zip`
+
+Currently, wrapping is only supported on windows.
+ 
+
 ## Installing
 
  On Windows, this tool is distributed via `scoop` (see [scoop.sh](https://scoop.sh)).
