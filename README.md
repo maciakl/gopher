@@ -38,6 +38,12 @@ This must be run in the project directory. It will:
 - zip up `name.exe` and create `name_win.zip`
 
 Currently, wrapping is only supported on windows.
+
+To create a scoop manifest file for the project run:
+
+    gopher -scoop
+
+This will generate `name.json` file that you can add to your scoop bucket. Don't forget to edit the description and verify all the details are correct before uploading the file.
  
 
 ## Installing
