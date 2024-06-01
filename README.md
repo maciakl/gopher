@@ -7,14 +7,16 @@ A minimal go project bootstrapping tool
             bootstrap a new project with a given name
       -version
             display version number and exit
-      -wrap string
+      -wrap
             build the project and zip it (windows only for now)
+     -scoop
+            create a scoop manifest file for the project
 
 ## Using the tool
 
 To create a new go project run:
 
-    gopher init name
+    gopher -init name
 
 This will:
 
@@ -28,7 +30,7 @@ This will:
  
 To build the project and generate zip file with the executable run:
 
-    gopher wrap name
+    gopher -wrap
 
 This must be run in the project directory. It will:
 
@@ -36,6 +38,12 @@ This must be run in the project directory. It will:
 - zip up `name.exe` and create `name_win.zip`
 
 Currently, wrapping is only supported on windows.
+
+To create a scoop manifest file for the project run:
+
+    gopher -scoop
+
+This will generate `name.json` file that you can add to your scoop bucket. Don't forget to edit the description and verify all the details are correct before uploading the file.
  
 
 ## Installing
