@@ -16,7 +16,7 @@ A minimal go project bootstrapping tool
 
 To create a new go project run:
 
-    gopher init name
+    gopher -init name
 
 This will:
 
@@ -30,7 +30,7 @@ This will:
  
 To build the project and generate zip file with the executable run:
 
-    gopher wrap name
+    gopher -wrap
 
 This must be run in the project directory. It will:
 
