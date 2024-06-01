@@ -7,8 +7,10 @@ A minimal go project bootstrapping tool
             bootstrap a new project with a given name
       -version
             display version number and exit
-      -wrap string
+      -wrap
             build the project and zip it (windows only for now)
+     -scoop
+            create a scoop manifest file for the project
 
 ## Using the tool
 
