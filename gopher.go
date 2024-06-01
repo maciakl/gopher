@@ -12,7 +12,7 @@ import (
     "github.com/fatih/color"
 )
 
-const version = "0.1.1"
+const version = "0.1.2"
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
 func main() {
@@ -177,7 +177,7 @@ func generateScoopFile() {
     name = getModuleName()
 
     color.Cyan("Getting version from gopher.go file...")
-    version = getVersion("gopher.go")
+    version = getVersion(name+".go")
 
     color.Cyan("Adding generic description, you can edit it later...")
     description = "A new scoop package"
