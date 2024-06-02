@@ -13,7 +13,7 @@ import (
     "github.com/fatih/color"
 )
 
-const version = "0.1.3"
+const version = "0.1.4"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
