@@ -8,7 +8,7 @@ A minimal go project bootstrapping tool
       -version
             display version number and exit
       -wrap
-            build the project and zip it (windows only for now)
+            build the project and zip it
      -scoop
             create a scoop manifest file for the project
 
@@ -35,9 +35,9 @@ To build the project and generate zip file with the executable run:
 This must be run in the project directory. It will:
 
 - run `go build`
-- zip up `name.exe` and create `name_win.zip`
+- zip up `name` or `name.exe` and create `name_os.zip`
 
-Currently, wrapping is only supported on windows.
+The zip file will be named `name_win.zip`, `name_mac.zip` or `name_lin.zip` depending on the operating system you are compiling on.
 
 To create a scoop manifest file for the project run:
 
