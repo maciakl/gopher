@@ -66,6 +66,8 @@ func createProject(name string) {
 
     banner()
 
+    errors := 0
+
     // create a new directory
     color.Cyan("Creating project "+ name + "...")
     os.Mkdir(name, 0755)
@@ -77,7 +79,9 @@ func createProject(name string) {
     cmd := exec.Command("go", "mod", "init", name)
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    cmd.Run()
+    e := cmd.Run()
+
+    if e != nil { errors++ }
 
     // create .gitignore file 
     color.Cyan("Creating .gitignore file...")
@@ -110,23 +114,33 @@ func createProject(name string) {
     cmd = exec.Command("curl", "-o", name+".go", templateUrl)
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    cmd.Run()
+    e = cmd.Run()
+
+    if e != nil { errors++ }
 
     // run the git init command with -b main
     color.Cyan("Running git init -b main...")
     cmd = exec.Command("git", "init", "-b", "main")
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    cmd.Run()
+    e = cmd.Run()
+
+    if e != nil { errors++ }
 
     // print the success message
-    color.Green("✔  Project "+ name + " created successfully.")
+    if errors == 0 {
+        color.Green("✔  Project "+ name + " created successfully.")
+    } else {
+        color.Green("⚠  Project "+ name + " created with some errors.")
+    }
 
 }
 
 func buildProject() {
 
     banner()
+
+    errors := 0
 
     // get the module name from go.mod file
     color.Cyan("Getting module name from go.mod file...")
@@ -146,7 +160,9 @@ func buildProject() {
     cmd := exec.Command("go", "build")
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    cmd.Run()
+    e := cmd.Run()
+
+    if e != nil { errors++ }
 
     // detect the operating system
     color.Cyan("Detecting the operating system...")
@@ -167,10 +183,16 @@ func buildProject() {
     cmd = exec.Command("zip", "-r", name+"_"+suffix+".zip", name+ext)
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
-    cmd.Run()
+    e = cmd.Run()
+
+    if e != nil { errors++ }
     
     // print the success message
-    color.Green("✔  Project "+ name + " wrapped successfully.")
+    if errors == 0 {
+        color.Green("✔  Project "+ name + " wrapped successfully.")
+    } else {
+        color.Green("⚠  Project "+ name + " wrapped with some errors.")
+    }
 
 }
 
