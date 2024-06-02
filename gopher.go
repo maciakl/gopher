@@ -5,6 +5,7 @@ import (
     "fmt"
     "flag"
     "bufio"
+    "runtime"
     "strings"
     "os/exec"
     "path/filepath"
@@ -12,7 +13,8 @@ import (
     "github.com/fatih/color"
 )
 
-const version = "0.1.2"
+const version = "0.1.3"
+
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
 func main() {
@@ -54,7 +56,7 @@ func main() {
 
 
     if name == "" && !wrap && !scoop {
-        color.Magenta("Gopher v" + version + "\n")
+        banner()
         color.Red("❌  No arguments provided. Use -init, -wrap or -scoop.")
     }
     
@@ -62,7 +64,7 @@ func main() {
 
 func createProject(name string) {
 
-    color.Magenta("Gopher v" + version + "\n")
+    banner()
 
     // create a new directory
     color.Cyan("Creating project "+ name + "...")
@@ -124,7 +126,7 @@ func createProject(name string) {
 
 func buildProject() {
 
-    color.Magenta("Gopher v" + version + "\n")
+    banner()
 
     // get the module name from go.mod file
     color.Cyan("Getting module name from go.mod file...")
@@ -139,8 +141,6 @@ func buildProject() {
     }
     os.Chdir(dir)
 
-    
-
     // run the go build 
     color.Cyan("Running go build...")
     cmd := exec.Command("go", "build")
@@ -148,9 +148,23 @@ func buildProject() {
     cmd.Stderr = os.Stderr
     cmd.Run()
 
+    // detect the operating system
+    color.Cyan("Detecting the operating system...")
+    current_os := runtime.GOOS
+    color.Cyan("Operating system is "+current_os)
+
+
+    var suffix string
+    if current_os == "windows" { suffix = "win" }
+    if current_os == "darwin" { suffix = "mac" }
+    if current_os == "linux" { suffix = "lin" }
+
+    ext := ""
+    if current_os == "windows" { ext = ".exe" }
+
     // create a zip file with the windows executable
-    color.Cyan("Creating "+name+"_win.zip file...")
-    cmd = exec.Command("zip", "-r", name+"_win.zip", name+".exe")
+    color.Cyan("Creating "+name+"_"+suffix+".zip file...")
+    cmd = exec.Command("zip", "-r", name+"_"+suffix+".zip", name+ext)
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
     cmd.Run()
@@ -164,7 +178,7 @@ func buildProject() {
 // generate a scoop manifest file
 func generateScoopFile() {
 
-    color.Magenta("Gopher v" + version + "\n")
+    banner()
     color.Cyan("Generating scoop manifest file...")
     // declare multiple string variables
     var name, username, version, description, homepage, url string
@@ -259,5 +273,10 @@ func getModuleName() string {
         }
     }
     return ""
+}
+
+
+func banner() {
+    color.Cyan("🐿  Gopher v" + version + "\n")
 }
 
