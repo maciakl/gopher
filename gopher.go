@@ -13,7 +13,7 @@ import (
     "github.com/fatih/color"
 )
 
-const version = "0.1.4"
+const version = "0.1.5"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -219,10 +219,10 @@ func generateScoopFile() {
     description = "A new scoop package"
 
     color.Cyan("Creating the homepage url...")
-    homepage = "https://gighub.com/"+username+"/"+name
+    homepage = "https://github.com/"+username+"/"+name
 
     color.Cyan("Creating the download url...")
-    url = "https://gighub.com/"+username+"/"+name+"/releases/download/v"+version+"/"+name+"_win.zip"
+    url = "https://github.com/"+username+"/"+name+"/releases/download/v"+version+"/"+name+"_win.zip"
 
 
     color.Cyan("Creating the scoop manifest...")
