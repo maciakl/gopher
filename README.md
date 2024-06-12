@@ -1,6 +1,6 @@
-# gopher
+# 🐿 gopher
 
-A minimal go project bootstrapping tool
+A minimal go project bootstrapping tool.
 
     Usage:
       -init string
@@ -13,6 +13,10 @@ A minimal go project bootstrapping tool
             create a scoop manifest file for the project
 
 ## Using the tool
+
+Currently gopher supports 3 actions.
+
+### Create a new project
 
 To create a new go project run:
 
@@ -28,6 +32,8 @@ This will:
   - create `name.go` with simple hello world code
   - run `git init -b main`
  
+### Compile the project and create a zip file for distribution
+
 To build the project and generate zip file with the executable run:
 
     gopher -wrap
@@ -39,12 +45,21 @@ This must be run in the project directory. It will:
 
 The zip file will be named `name_win.zip`, `name_mac.zip` or `name_lin.zip` depending on the operating system you are compiling on.
 
-To create a scoop manifest file for the project run:
+### Generate a Scoop Manifest
+
+To create a Scoop manifest (see [scoop.sh](https://scoop.sh)) for the project run:
 
     gopher -scoop
 
-This will generate `name.json` file that you can add to your scoop bucket. Don't forget to edit the description and verify all the details are correct before uploading the file.
- 
+This will generate `name.json` file that you can add to your scoop bucket. 
+
+Don't forget to edit the description and verify all the details are correct before uploading the file.
+
+## Examples
+
+Sample screenshot of using `gopher` to create a go project, compile and wrap the executable into a zip file and generate a scoop manifest (all done in Powershell on Windows):
+
+<img width="682" alt="scr" src="https://github.com/maciakl/gopher/assets/189576/8fbf8eea-eff7-41c2-9dec-b4f47ef92ba9">
 
 ## Installing
 
