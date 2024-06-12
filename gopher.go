@@ -13,7 +13,7 @@ import (
     "github.com/fatih/color"
 )
 
-const version = "0.1.6"
+const version = "0.1.8"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -170,11 +170,39 @@ func buildProject() {
     }
     os.Chdir(dir)
 
-    // run the go build 
-    color.Cyan("Running go build...")
+    // detect the operating system
+    color.Cyan("Detecting the operating system...")
+    current_os := runtime.GOOS
+    color.Cyan("Operating system is "+current_os)
+
+    // run the go build command for the common operating systems
+    color.Cyan("Attempting to cross-compile the project for windows, mac and linux...")
+    errors += buildAndZip("windows", name)
+    errors += buildAndZip("linux", name)
+    errors += buildAndZip("darwin", name)
+    
+    // print the success message
+    if errors == 0 {
+        color.Green("✔  Project "+ name + " wrapped successfully.")
+    } else {
+        color.Green("⚠  Project "+ name + " wrapped with some errors.")
+    }
+
+}
+
+
+// build and zip the project, return the number of errors encountered
+func buildAndZip(current_os string, name string) int {
+
+    errors := 0
+
+    // run the go build command
+    color.Cyan("Running go build for "+current_os+"...")
     cmd := exec.Command("go", "build")
     cmd.Stdout = os.Stdout
     cmd.Stderr = os.Stderr
+    cmd.Env = os.Environ()
+    cmd.Env = append(cmd.Env, "GOOS="+current_os)
     e := cmd.Run()
 
     if e != nil { 
@@ -183,21 +211,19 @@ func buildProject() {
         errors++ 
     }
 
-    // detect the operating system
-    color.Cyan("Detecting the operating system...")
-    current_os := runtime.GOOS
-    color.Cyan("Operating system is "+current_os)
-
-
     var suffix string
     if current_os == "windows" { suffix = "win" }
     if current_os == "darwin" { suffix = "mac" }
     if current_os == "linux" { suffix = "lin" }
 
+    // windows executables have .exe extension, others don't
     ext := ""
     if current_os == "windows" { ext = ".exe" }
 
-    // create a zip file with the windows executable
+    // create a zip file with the executable
+    // requires the zip command to be installed
+    // on windows it's not available by default
+    // you can install it with scoop install zip
     color.Cyan("Creating "+name+"_"+suffix+".zip file...")
     cmd = exec.Command("zip", "-r", name+"_"+suffix+".zip", name+ext)
     cmd.Stdout = os.Stdout
@@ -209,13 +235,8 @@ func buildProject() {
         color.Red(e.Error())
         errors++ 
     }
-    
-    // print the success message
-    if errors == 0 {
-        color.Green("✔  Project "+ name + " wrapped successfully.")
-    } else {
-        color.Green("⚠  Project "+ name + " wrapped with some errors.")
-    }
+
+    return errors
 
 }
 
