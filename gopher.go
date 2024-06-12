@@ -13,7 +13,7 @@ import (
     "github.com/fatih/color"
 )
 
-const version = "0.1.5"
+const version = "0.1.6"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -81,12 +81,17 @@ func createProject(name string) {
     cmd.Stderr = os.Stderr
     e := cmd.Run()
 
-    if e != nil { errors++ }
+    if e != nil { 
+        fmt.Print("💥 ")
+        color.Red("Error running go mod command")
+        errors++ 
+    }
 
     // create .gitignore file 
     color.Cyan("Creating .gitignore file...")
     gfile, err := os.Create(".gitignore")
     if err != nil {
+        fmt.Print("💥 ")
         color.Red("Error creating .gitignore", err)
         os.Exit(1)
     }
@@ -102,7 +107,8 @@ func createProject(name string) {
     color.Cyan("Creating README.md file...")
     rfile, err := os.Create("README.md")
     if err != nil {
-        fmt.Println("Error creating README.md file:", err)
+        fmt.Print("💥 ")
+        color.Red("Error creating README.md file:", err)
         os.Exit(1)
     }
     rfile.WriteString("# " + name + "\n")
@@ -116,7 +122,11 @@ func createProject(name string) {
     cmd.Stderr = os.Stderr
     e = cmd.Run()
 
-    if e != nil { errors++ }
+    if e != nil { 
+        fmt.Print("💥 ")
+        color.Red(e.Error())
+        errors++ 
+    }
 
     // run the git init command with -b main
     color.Cyan("Running git init -b main...")
@@ -125,7 +135,11 @@ func createProject(name string) {
     cmd.Stderr = os.Stderr
     e = cmd.Run()
 
-    if e != nil { errors++ }
+    if e != nil { 
+        fmt.Print("💥 ")
+        color.Red(e.Error())
+        errors++
+    }
 
     // print the success message
     if errors == 0 {
@@ -150,6 +164,7 @@ func buildProject() {
     // change to the current directory (pwd)
     dir, err := os.Getwd()
     if err != nil {
+        fmt.Print("💥 ")
         color.Red("Error getting the current directory", err)
         os.Exit(1)
     }
@@ -162,7 +177,11 @@ func buildProject() {
     cmd.Stderr = os.Stderr
     e := cmd.Run()
 
-    if e != nil { errors++ }
+    if e != nil { 
+        fmt.Print("💥 ")
+        color.Red(e.Error())
+        errors++ 
+    }
 
     // detect the operating system
     color.Cyan("Detecting the operating system...")
@@ -185,7 +204,11 @@ func buildProject() {
     cmd.Stderr = os.Stderr
     e = cmd.Run()
 
-    if e != nil { errors++ }
+    if e != nil { 
+        fmt.Print("💥 ")
+        color.Red(e.Error())
+        errors++ 
+    }
     
     // print the success message
     if errors == 0 {
@@ -258,6 +281,7 @@ func getVersion(filename string) string {
     // open the file
     file, err := os.Open(filename)
     if err != nil {
+        fmt.Print("💥 ")
         color.Red("Error opening file", err)
         os.Exit(1)
     }
@@ -281,6 +305,7 @@ func getModuleName() string {
     // open the file
     file, err := os.Open("go.mod")
     if err != nil {
+        fmt.Print("💥 ")
         color.Red("Error opening go.mod file", err)
         os.Exit(1)
     }
