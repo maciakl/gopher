@@ -32,7 +32,7 @@ This will:
   - create `name.go` with simple hello world code
   - run `git init -b main`
  
-### Compile the project and create a zip file for distribution
+### Compile the project and create a zip files for distribution
 
 To build the project and generate zip file with the executable run:
 
@@ -40,10 +40,9 @@ To build the project and generate zip file with the executable run:
 
 This must be run in the project directory. It will:
 
-- run `go build`
-- zip up `name` or `name.exe` and create `name_os.zip`
+- cross compile the project for windows, mac and linux
+- generate zip files for each os named `name_win.zip`, `name_mac.zip` and `name_lin.zip` respectively
 
-The zip file will be named `name_win.zip`, `name_mac.zip` or `name_lin.zip` depending on the operating system you are compiling on.
 
 ### Generate a Scoop Manifest
 
