@@ -9,6 +9,8 @@ A minimal go project bootstrapping tool.
             display version number and exit
       -wrap
             build the project and zip it
+     -make
+            build the project using a Makefile, fall back on wrap
      -scoop
             create a scoop manifest file for the project
 
@@ -34,7 +36,17 @@ This will:
  
 ### Compile the project and create a zip files for distribution
 
-To build the project and generate zip file with the executable run:
+In most cases you should use the following command while in the project directory:
+
+    gopher -make
+
+If you do:
+
+- Gopher will check if a `Makefile` exists in the project directory
+- If it does, it will run the make command and execute the default build
+- If there is no `Makefile`, it will use the gopher defaults instead
+
+To build the project using the gopher defaults and skip Makefile even if one exists run:
 
     gopher -wrap
 
@@ -43,6 +55,7 @@ This must be run in the project directory. It will:
 - cross compile the project for windows, mac and linux
 - generate zip files for each os named `name_win.zip`, `name_mac.zip` and `name_lin.zip` respectively
 
+Note that the `-make` switch does not generate any zip files and assumes any kind of packaging will be handled by your project Makefile.
 
 ### Generate a Scoop Manifest
 
