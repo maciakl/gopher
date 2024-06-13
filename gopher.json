@@ -1,9 +1,9 @@
 {
-    "version": "0.1.8",
+    "version": "0.1.9",
     "description": "A new scoop package",
     "homepage": "https://github.com/maciakl/gopher",
     "checkver": "github",
-    "url": "https://github.com/maciakl/gopher/releases/download/v0.1.8/gopher_win.zip",
+    "url": "https://github.com/maciakl/gopher/releases/download/v0.1.9/gopher_win.zip",
     "bin": "gopher.exe",
     "license": "freeware"
 }
