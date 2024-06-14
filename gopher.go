@@ -13,7 +13,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -466,9 +466,9 @@ func installProject() {
             os.Exit(1)
         }
 
-        // copy the gopher binary to the bin directory
+        // copy the binary to the bin directory
         color.Cyan("Copying the binary to the bin directory...")
-        cmd := exec.Command("cp", name+".exe", home + "\\bin")
+        cmd := exec.Command("copy", name+".exe", home + "\\bin")
         cmd.Stdout = os.Stdout
         cmd.Stderr = os.Stderr
         e := cmd.Run()
@@ -496,7 +496,7 @@ func installProject() {
             os.Exit(1)
         }
 
-        // copy the gopher binary to the bin directory
+        // copy the binary to the bin directory
         color.Cyan("Copying the binary to the bin directory...")
         cmd := exec.Command("cp", name, home + "/bin")
         cmd.Stdout = os.Stdout
