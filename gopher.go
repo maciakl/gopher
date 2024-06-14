@@ -13,7 +13,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const version = "0.1.9"
+const version = "0.2.0"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -189,7 +189,8 @@ func buildProjectWithMake() {
 	dir, err := os.Getwd()
 	if err != nil {
 		fmt.Print("💥 ")
-		color.Red("Error getting the current directory", err)
+		color.Red("Error getting the current directory")
+        color.Red(err.Error())
 		os.Exit(1)
 	}
 	os.Chdir(dir)
@@ -230,7 +231,8 @@ func buildProject() {
 	dir, err := os.Getwd()
 	if err != nil {
 		fmt.Print("💥 ")
-		color.Red("Error getting the current directory", err)
+		color.Red("Error getting the current directory")
+        color.Red(err.Error())
 		os.Exit(1)
 	}
 	os.Chdir(dir)
