@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+    cp "github.com/otiai10/copy"
 )
 
 const version = "0.2.1"
@@ -468,14 +469,12 @@ func installProject() {
 
         // copy the binary to the bin directory
         color.Cyan("Copying the binary to the bin directory...")
-        cmd := exec.Command("copy", name+".exe", home + "\\bin")
-        cmd.Stdout = os.Stdout
-        cmd.Stderr = os.Stderr
-        e := cmd.Run()
-
-        if e != nil {
+        
+        // on windows cp is a built in shell feature so we will use the copy library instead
+        err := cp.Copy(name+".exe", home + "\\bin\\" + name + ".exe")
+        if err != nil {
             fmt.Print("💥 ")
-            color.Red(e.Error())
+            color.Red(err.Error())
             os.Exit(1)
         }
 
