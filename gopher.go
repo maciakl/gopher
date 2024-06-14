@@ -31,6 +31,9 @@ func main() {
 	var scoop bool
 	flag.BoolVar(&scoop, "scoop", false, "generate a scoop manifest file for the project")
 
+	var install bool
+	flag.BoolVar(&install, "install", false, "install the project binary in the user's private bin directory")
+
 	var ver bool
 	flag.BoolVar(&ver, "version", false, "display version number and exit")
 	flag.Parse()
@@ -42,26 +45,30 @@ func main() {
 	}
 
 	// bootstrap a new project
-	if name != "" && !wrap && !scoop && !make {
+	if name != "" && !wrap && !scoop && !make && !install {
 		createProject(name)
 	}
 
 	// build the project and zip it
-	if wrap && name == "" && !scoop && !make {
+	if wrap && name == "" && !scoop && !make && !install {
 		buildLegacy()
 	}
 
 	// build the project using make
-	if !wrap && name == "" && !scoop && make {
+	if !wrap && name == "" && !scoop && make && !install {
 		build()
 	}
 
 	// generate a scoop manifest file
-	if scoop && name == "" && !wrap && !make {
+	if scoop && name == "" && !wrap && !make && !install {
 		generateScoopFile()
 	}
 
-	if name == "" && !wrap && !scoop && !make {
+	if !scoop && name == "" && !wrap && !make && install {
+        installProject()
+	}
+
+	if name == "" && !wrap && !scoop && !make && !install {
 		banner()
 		color.Red("❌  No arguments provided. Use -init, -make, -wrap or -scoop.")
 	}
@@ -415,4 +422,94 @@ func getModuleName() string {
 
 func banner() {
 	color.Cyan("🐿  Gopher v" + version + "\n")
+}
+
+// this funtion will istall the project binary in the user's provate bin directory
+// this will be ~/bin on linux and mac and %USERPROFILE%\bin on windows
+func installProject() {
+
+    banner()
+
+    // get project name from go.mod file
+    name := getModuleName()
+
+    color.Cyan("Installing "+name+"...")
+
+    // build it for this system first by running go build
+    color.Cyan("Running go build...")
+    cmd := exec.Command("go", "build")
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    e := cmd.Run()
+
+    if e != nil {
+        fmt.Print("💥 ")
+        color.Red(e.Error())
+    }
+
+    color.Cyan("Checking the os...")
+
+    //check if we are on windows
+    if runtime.GOOS == "windows" {
+
+        color.Cyan("We are on Windows...")
+
+        // get the user's home directory
+        color.Cyan("Getting the user's home directory...")
+        home := os.Getenv("USERPROFILE")
+
+        // check if the bin directory exists and bail out if it does not
+        color.Cyan("Checking if the bin directory exists...")
+        if _, err := os.Stat(home + "\\bin"); os.IsNotExist(err) {
+            fmt.Print("💥 ")
+            color.Red("The "+home+"\\bin"+" directory does not exist. Please create it and add it to your path first.")
+            os.Exit(1)
+        }
+
+        // copy the gopher binary to the bin directory
+        color.Cyan("Copying the binary to the bin directory...")
+        cmd := exec.Command("cp", name+".exe", home + "\\bin")
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+        e := cmd.Run()
+
+        if e != nil {
+            fmt.Print("💥 ")
+            color.Red(e.Error())
+            os.Exit(1)
+        }
+
+    } else {
+
+        color.Cyan("We are on Linux or Mac...")
+
+        // get the user's home directory
+        color.Cyan("Getting the user's home directory...")
+        home := os.Getenv("HOME")
+
+
+        // check if the bin directory exists and bail out if it does not
+        color.Cyan("Checking if the bin directory exists...")
+        if _, err := os.Stat(home + "/bin"); os.IsNotExist(err) {
+            fmt.Print("💥 ")
+            color.Red("The "+home+"/bin"+" directory does not exist. Please create it and add it to your path first.")
+            os.Exit(1)
+        }
+
+        // copy the gopher binary to the bin directory
+        color.Cyan("Copying the binary to the bin directory...")
+        cmd := exec.Command("cp", name, home + "/bin")
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+        e := cmd.Run()
+
+        if e != nil {
+            fmt.Print("💥 ")
+            color.Red(e.Error())
+            os.Exit(1)
+        }
+
+    }
+
+    color.Green("✔  "+name+" installed successfully.")
 }
