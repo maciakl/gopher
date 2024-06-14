@@ -11,6 +11,8 @@ A minimal go project bootstrapping tool.
             build the project and zip it
      -make
             build the project using a Makefile, fall back on wrap
+     -install
+            install the project to user's private bin directory
      -scoop
             create a scoop manifest file for the project
 
@@ -66,6 +68,16 @@ To create a Scoop manifest (see [scoop.sh](https://scoop.sh)) for the project ru
 This will generate `name.json` file that you can add to your scoop bucket. 
 
 Don't forget to edit the description and verify all the details are correct before uploading the file.
+
+### Installing
+
+To install the project on your system run
+
+    gopher -install
+
+This will rebuild the project using `go build` and then copy the executable to your private user directory. This is `~/bin/` on mac/linux or `%USERPROFILE%\bin\` on windows. If such directory does not exist, gopher will bail out with an error.
+
+⚠️ Note: you must create the `bin` directory and add it to your `PATH` manually, gopher won't do that for you
 
 ## Examples
 
