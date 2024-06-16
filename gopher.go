@@ -14,7 +14,7 @@ import (
     cp "github.com/otiai10/copy"
 )
 
-const version = "0.2.1"
+const version = "0.2.2"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -71,7 +71,7 @@ func main() {
 
 	if name == "" && !wrap && !scoop && !make && !install {
 		banner()
-		color.Red("❌  No arguments provided. Use -init, -make, -wrap or -scoop.")
+		color.Red("❌  No arguments provided. Use -help, -version, -init, -make, -wrap or -scoop.")
 	}
 
 }
@@ -122,7 +122,8 @@ func createProject(name string) {
 	rfile, err := os.Create("README.md")
 	if err != nil {
 		fmt.Print("💥 ")
-		color.Red("Error creating README.md file:", err)
+		color.Red("Error creating README.md file")
+        color.Red(err.Error())
 		os.Exit(1)
 	}
 	rfile.WriteString("# " + name + "\n")
@@ -366,7 +367,8 @@ func generateScoopFile() {
 	color.Cyan("Creating " + name + ".json file")
 	mfile, err := os.Create(name + ".json")
 	if err != nil {
-		color.Red("Error creating "+name+".json file", err)
+		color.Red("Error creating "+name+".json file")
+        color.Red(err.Error())
 		os.Exit(1)
 	}
 	defer mfile.Close()
@@ -382,7 +384,8 @@ func getVersion(filename string) string {
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Print("💥 ")
-		color.Red("Error opening file", err)
+		color.Red("Error opening file")
+        color.Red(err.Error())
 		os.Exit(1)
 	}
 	defer file.Close()
@@ -405,7 +408,8 @@ func getModuleName() string {
 	file, err := os.Open("go.mod")
 	if err != nil {
 		fmt.Print("💥 ")
-		color.Red("Error opening go.mod file", err)
+		color.Red("Error opening go.mod file")
+        color.Red(err.Error())
 		os.Exit(1)
 	}
 	defer file.Close()
