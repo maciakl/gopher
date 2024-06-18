@@ -18,7 +18,12 @@ A minimal go project bootstrapping tool.
 
 ## Using the tool
 
-Currently gopher supports 3 actions.
+Currently gopher supports 4 actions:
+
+- Bootstraping a project `-init`
+- Building a project `-make` or `-wrap`
+- Installing a project `-install`
+- Creating a `scoop` manifest `-scoop`
 
 ### Create a new project
 
