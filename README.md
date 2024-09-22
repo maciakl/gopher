@@ -2,35 +2,41 @@
 
 A minimal go project bootstrapping tool.
 
-    Usage:
-      -init string
-            bootstrap a new project with a given name
-      -version
+    Usage: gopher [subcommand] <arguments>
+
+    Subcommands:
+      init <string>
+            bootstrap a new project with a given <string> name or url
+      make
+            build the project using a Makefile, falle back on wrap
+      wrap
+            build the project for windows, linux and mac, then and zip the binaries
+      scoop
+            generate a Scoop.sh manifest file for the project
+      install
+            install the project binary in the user's private bin directory
+      version
             display version number and exit
-      -wrap
-            build the project and zip it
-     -make
-            build the project using a Makefile, fall back on wrap
-     -install
-            install the project to user's private bin directory
-     -scoop
-            create a scoop manifest file for the project
+      help
+            display this help message and exit
 
 ## Using the tool
 
-Currently gopher supports 3 actions.
+Currently gopher supports 5 actions.
 
 ### Create a new project
 
 To create a new go project run:
 
-    gopher -init name
+    gopher init <string>
 
-This will:
+The `<string>` can be a project name or a git repository uri (without https:// part).
+
+Goper will extract the project `name` from the uri and use it to create the project. Then it will:
 
 - create a folder `name`
 - inside it will:
-  - run `go mod init name`
+  - run `go mod init uri`
   - create `.gitignore` file
   - create `README.md` file
   - create `name.go` with simple hello world code
@@ -40,7 +46,7 @@ This will:
 
 In most cases you should use the following command while in the project directory:
 
-    gopher -make
+    gopher make
 
 If you do:
 
@@ -50,22 +56,23 @@ If you do:
 
 To build the project using the gopher defaults and skip Makefile even if one exists run:
 
-    gopher -wrap
+    gopher wrap
 
 This must be run in the project directory. It will:
 
 - cross compile the project for windows, mac and linux
 - generate zip files for each os named `name_win.zip`, `name_mac.zip` and `name_lin.zip` respectively
 
-Note that the `-make` switch does not generate any zip files and assumes any kind of packaging will be handled by your project Makefile.
+Note that if a `Makefile` is present, the `make` subcommand does not generate any zip files and assumes any kind of packaging will be handled by your project Makefile.
 
 ### Generate a Scoop Manifest
 
 To create a Scoop manifest (see [scoop.sh](https://scoop.sh)) for the project run:
 
-    gopher -scoop
+    gopher scoop
 
-This will generate `name.json` file that you can add to your scoop bucket. 
+This will generate `name.json` file that you can add to your scoop bucket using the data in your `go.mod` file. If the module name is not a valid uri, gopher will ask you to provide your Github username
+and then use that to create the appropriate URL's for the manifest.
 
 Don't forget to edit the description and verify all the details are correct before uploading the file.
 
@@ -73,7 +80,7 @@ Don't forget to edit the description and verify all the details are correct befo
 
 To install the project on your system run
 
-    gopher -install
+    gopher install
 
 This will rebuild the project using `go build` and then copy the executable to your private user directory. This is `~/bin/` on mac/linux or `%USERPROFILE%\bin\` on windows. If such directory does not exist, gopher will bail out with an error.
 

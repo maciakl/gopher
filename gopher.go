@@ -2,11 +2,10 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
+	//"path/filepath"
 	"runtime"
 	"strings"
 
@@ -14,74 +13,100 @@ import (
     cp "github.com/otiai10/copy"
 )
 
-const version = "0.2.2"
+const version = "0.3.0"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
 func main() {
 
-	var name string
-	flag.StringVar(&name, "init", "", "bootstrap a new project with a given name")
+    // get number of arguments
+    if len(os.Args) == 1 {
+        banner()
+        color.Red("❌  Missing subcommand.")
+        printUsage()
+        os.Exit(1)
+    }
 
-	var wrap bool
-	flag.BoolVar(&wrap, "wrap", false, "build the project and zip it (windows only for now)")
+    // get the first argument
+    arg := os.Args[1]
 
-	var make bool
-	flag.BoolVar(&make, "make", false, "build the project using a Makefile, falle back on wrap")
+    switch arg {
+        case "version", "-version", "--version", "-v":
+            banner()
+            os.Exit(0)
 
-	var scoop bool
-	flag.BoolVar(&scoop, "scoop", false, "generate a scoop manifest file for the project")
+        case "help", "-help", "--help", "-h":
+            banner()
+            printUsage()
+            os.Exit(0)
 
-	var install bool
-	flag.BoolVar(&install, "install", false, "install the project binary in the user's private bin directory")
+        // bootstrap a new project
+        case "init":
+            if len(os.Args) < 3 {
+                banner()
+                color.Red("❌  Missing argument for init subcommand.")
+                printUsage()
+                os.Exit(1)
+            }
+            createProject(os.Args[2])
 
-	var ver bool
-	flag.BoolVar(&ver, "version", false, "display version number and exit")
-	flag.Parse()
+            // build the project using make
+            case "make":
+                build()
 
-	// show version and exit
-	if ver {
-		fmt.Println(filepath.Base(os.Args[0]), "version", version)
-		os.Exit(0)
-	}
+            // build the project and zip it
+            case "wrap":
+                buildLegacy()
 
-	// bootstrap a new project
-	if name != "" && !wrap && !scoop && !make && !install {
-		createProject(name)
-	}
+            // generate a scoop manifest file
+            case "scoop":
+                generateScoopFile()
 
-	// build the project and zip it
-	if wrap && name == "" && !scoop && !make && !install {
-		buildLegacy()
-	}
 
-	// build the project using make
-	if !wrap && name == "" && !scoop && make && !install {
-		build()
-	}
+            case "install":
+                installProject()
 
-	// generate a scoop manifest file
-	if scoop && name == "" && !wrap && !make && !install {
-		generateScoopFile()
-	}
+            // print usage and exit
+            default:
+                printUsage()
+                os.Exit(1)
+    }
+}
 
-	if !scoop && name == "" && !wrap && !make && install {
-        installProject()
-	}
-
-	if name == "" && !wrap && !scoop && !make && !install {
-		banner()
-		color.Red("❌  No arguments provided. Use -help, -version, -init, -make, -wrap or -scoop.")
-	}
-
+func printUsage() {
+    fmt.Println("\nUsage: gopher [subcommand] <arguments>")
+    fmt.Println("\nSubcommands:")
+    fmt.Println("  init <string>")
+    fmt.Println("        bootstrap a new project with a given <string> name or url")
+    fmt.Println("  make")
+    fmt.Println("        build the project using a Makefile, falle back on wrap")
+    fmt.Println("  wrap")
+    fmt.Println("        build the project for windows, linux and mac, then and zip the binaries")
+    fmt.Println("  scoop")
+    fmt.Println("        generate a Scoop.sh manifest file for the project")
+    fmt.Println("  install")
+    fmt.Println("        install the project binary in the user's private bin directory")
+    fmt.Println("  version")
+    fmt.Println("        display version number and exit")
+    fmt.Println("  help")
+    fmt.Println("        display this help message and exit")
 }
 
 // This function creates a new project with a given name.
-func createProject(name string) {
+func createProject(uri string) {
 
 	banner()
 
 	errors := 0
+    var name string
+
+    // check if we got a name or a uri
+    if strings.Contains(uri, "/") {
+        color.Cyan("Detected a github uri, extracting the name...")
+        name = getName(uri)
+    } else {
+        name = uri
+    }
 
 	// create a new directory
 	color.Cyan("Creating project " + name + "...")
@@ -89,8 +114,8 @@ func createProject(name string) {
 	os.Chdir(name)
 
 	// run the go mod init command
-	color.Cyan("Running go mod init " + name + "...")
-	cmd := exec.Command("go", "mod", "init", name)
+	color.Cyan("Running go mod init " + uri + "...")
+	cmd := exec.Command("go", "mod", "init", uri)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	e := cmd.Run()
@@ -331,12 +356,20 @@ func generateScoopFile() {
 	// declare multiple string variables
 	var name, username, version, description, homepage, url string
 
-	// ask user for github username
-	color.Yellow("⭐ Enter your github username and press [ENTER]:")
-	fmt.Scanln(&username)
 
-	color.Cyan("Getting module name from go.mod file...")
-	name = getModuleName()
+
+	color.Cyan("Getting module string from go.mod file...")
+    uri := getModule()
+
+    // check if the module string is a uri
+    if strings.Contains(uri, "/") {
+        name = getName(uri)
+    } else {
+        name = uri
+        // ask user for github username since it's not in the module string
+        color.Yellow("⭐ Enter your github username and press [ENTER]:")
+        fmt.Scanln(&username)
+    }
 
 	color.Cyan("Getting version from gopher.go file...")
 	version = getVersion(name + ".go")
@@ -419,10 +452,48 @@ func getModuleName() string {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "module") {
-			return strings.Split(line, " ")[1]
+
+            url := strings.Split(line, " ")[1]
+
+            // if url contains / then it's a github url an we need to extract the last part
+            if strings.Contains(url, "/") {
+                return getName(url)
+            } else {
+                return url
+            }
 		}
 	}
 	return ""
+}
+
+// search the go.mod file for the module string and return it
+func getModule() string {
+    // open the file
+    file, err := os.Open("go.mod")
+    if err != nil {
+        fmt.Print("💥 ")
+        color.Red("Error opening go.mod file")
+        color.Red(err.Error())
+        os.Exit(1)
+    }
+    defer file.Close()
+
+    // create a scanner
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        line := scanner.Text()
+        if strings.Contains(line, "module") {
+            return strings.Split(line, " ")[1]
+        }
+    }
+    return ""
+}
+
+
+// function that takes in a github uri and returns the last part of It
+func getName(uri string) string {
+    parts := strings.Split(uri, "/")
+    return parts[len(parts)-1]
 }
 
 func banner() {
