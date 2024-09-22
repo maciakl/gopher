@@ -7,9 +7,9 @@ A minimal go project bootstrapping tool.
     Subcommands:
       init <string>
             bootstrap a new project with a given <string> name or url
-      make
-            build the project using a Makefile, falle back on wrap
-      wrap
+      make <target>
+            build the project using a Makefile, fall back on release if no Makefile is present
+      release
             build the project for windows, linux and mac, then and zip the binaries
       scoop
             generate a Scoop.sh manifest file for the project
@@ -22,12 +22,13 @@ A minimal go project bootstrapping tool.
 
 ## Using the tool
 
-Currently gopher supports 4 actions.
+Currently gopher supports 5 actions.
 
 - Bootstraping a project `init`
-- Building a project `make` or `wrap`
+- Building a project using a Makefile `make`
+- Building and packaging a project `release`
 - Installing a project `install`
-- Creating a `scoop` manifest `scoop`
+- Creating a [Scoop.sh](https://scoop.sh) manifest `scoop`
 
 ### Create a new project
 
@@ -47,28 +48,30 @@ Goper will extract the project `name` from the uri and use it to create the proj
   - create `name.go` with simple hello world code
   - run `git init -b main`
  
-### Compile the project and create a zip files for distribution
+### Building the project
 
 In most cases you should use the following command while in the project directory:
 
-    gopher make
+    gopher make <target>
 
 If you do:
 
 - Gopher will check if a `Makefile` exists in the project directory
-- If it does, it will run the make command and execute the default build
-- If there is no `Makefile`, it will use the gopher defaults instead
+- If it does, it will run the make command with the specified <target> or will just run `make` if no target is specified
+- If there is no `Makefile`, it will warn you and switch to doing `gopher release`
 
-To build the project using the gopher defaults and skip Makefile even if one exists run:
+### Releasing a project
 
-    gopher wrap
+To build the project and create a set of zip files for different distribution platforms run:
+
+    gopher release
 
 This must be run in the project directory. It will:
 
 - cross compile the project for windows, mac and linux
 - generate zip files for each os named `name_win.zip`, `name_mac.zip` and `name_lin.zip` respectively
 
-Note that if a `Makefile` is present, the `make` subcommand does not generate any zip files and assumes any kind of packaging will be handled by your project Makefile.
+Note that this is the same functionality as the legacy `gopher wrap` command.
 
 ### Generate a Scoop Manifest
 

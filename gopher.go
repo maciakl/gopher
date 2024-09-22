@@ -13,7 +13,7 @@ import (
     cp "github.com/otiai10/copy"
 )
 
-const version = "0.3.1"
+const version = "0.3.2"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -45,7 +45,6 @@ func main() {
             banner()
 
             if len(os.Args) < 3 {
-                banner()
                 color.Red("❌  Missing argument for init subcommand.")
                 printUsage()
                 os.Exit(1)
@@ -56,10 +55,17 @@ func main() {
             // build the project using make
             case "make":
                 banner()
-                build()
+                var target string 
+                if len(os.Args) < 3 {
+                    color.Yellow("⚠  Missing <target> argument for make.")
+                    target = ""
+                } else {
+                    target = os.Args[2]
+                }
+                build(target)
 
             // build the project and zip it
-            case "wrap":
+            case "release", "wrap":
                 banner()
                 buildLegacy()
 
@@ -88,9 +94,9 @@ func printUsage() {
     fmt.Println("\nSubcommands:")
     fmt.Println("  init <string>")
     fmt.Println("        bootstrap a new project with a given <string> name or url")
-    fmt.Println("  make")
-    fmt.Println("        build the project using a Makefile, falle back on wrap")
-    fmt.Println("  wrap")
+    fmt.Println("  make <target>")
+    fmt.Println("        build the project using a Makefile, fall back on release if Makefile is not found")
+    fmt.Println("  release")
     fmt.Println("        build the project for windows, linux and mac, then and zip the binaries")
     fmt.Println("  scoop")
     fmt.Println("        generate a Scoop.sh manifest file for the project")
@@ -198,7 +204,7 @@ func createProject(uri string) {
 }
 
 // The build function decides whether to use make or build it using the internal gopher defaults
-func build() {
+func build(target string) {
 
 	color.Cyan("Building the project...")
 	color.Cyan("Checking if Makefile exists in the project directory...")
@@ -206,9 +212,9 @@ func build() {
 	// check if Makefile exists in the project directory
 	if _, err := os.Stat("Makefile"); err == nil {
 		color.Cyan("Makefile found in the project directory...")
-		buildProjectWithMake()
+        buildProjectWithMake(target)
 	} else {
-		color.Cyan("Makefile not found in the project directory...")
+        color.Yellow("⚠  Makefile not found in the project directory...")
 		buildProject()
 	}
 
@@ -221,7 +227,7 @@ func buildLegacy() {
 
 // This function runs the make command to build the project.
 // It assumes make is installed on the system and that Makefile exists in the project directory.
-func buildProjectWithMake() {
+func buildProjectWithMake(target string) {
 
 	errors := 0
 
@@ -236,8 +242,8 @@ func buildProjectWithMake() {
 	os.Chdir(dir)
 
 	// run the make command
-	color.Cyan("Running make...")
-	cmd := exec.Command("make")
+    color.Cyan("Running: make "+target+"")
+    cmd := exec.Command("make", target)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	e := cmd.Run()
