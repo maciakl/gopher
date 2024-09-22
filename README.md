@@ -96,9 +96,9 @@ This will rebuild the project using `go build` and then copy the executable to y
 
 ## Examples
 
-Sample screenshot of using `gopher` to create a go project, compile and wrap the executable into a zip file and generate a scoop manifest (all done in Powershell on Windows):
+Sample screenshot of using `gopher` to create a go project, generate a scoop manifest and compiling release files for windows, linux and mac (all done in Powershell on Windows):
 
-<img width="682" alt="scr" src="https://github.com/maciakl/gopher/assets/189576/8fbf8eea-eff7-41c2-9dec-b4f47ef92ba9">
+![gopher](https://github.com/user-attachments/assets/88c54157-4e5c-435a-b9d9-dd8f24734a3f)
 
 ## Installing
 
