@@ -13,7 +13,7 @@ import (
     cp "github.com/otiai10/copy"
 )
 
-const version = "0.3.0"
+const version = "0.3.1"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/3fb1c32e3766bf2cf3926ee72225518e827a1228/hello.go"
 
@@ -42,38 +42,48 @@ func main() {
 
         // bootstrap a new project
         case "init":
+            banner()
+
             if len(os.Args) < 3 {
                 banner()
                 color.Red("❌  Missing argument for init subcommand.")
                 printUsage()
                 os.Exit(1)
             }
+
             createProject(os.Args[2])
 
             // build the project using make
             case "make":
+                banner()
                 build()
 
             // build the project and zip it
             case "wrap":
+                banner()
                 buildLegacy()
 
             // generate a scoop manifest file
             case "scoop":
+                banner()
                 generateScoopFile()
 
 
             case "install":
+                banner()
                 installProject()
 
             // print usage and exit
             default:
+                banner()
+                color.Red("❌  Unknown subcommand.")
                 printUsage()
                 os.Exit(1)
     }
 }
 
 func printUsage() {
+
     fmt.Println("\nUsage: gopher [subcommand] <arguments>")
     fmt.Println("\nSubcommands:")
     fmt.Println("  init <string>")
@@ -94,8 +104,6 @@ func printUsage() {
 
 // This function creates a new project with a given name.
 func createProject(uri string) {
-
-	banner()
 
 	errors := 0
     var name string
@@ -192,7 +200,6 @@ func createProject(uri string) {
 // The build function decides whether to use make or build it using the internal gopher defaults
 func build() {
 
-	banner()
 	color.Cyan("Building the project...")
 	color.Cyan("Checking if Makefile exists in the project directory...")
 
@@ -208,7 +215,6 @@ func build() {
 }
 
 func buildLegacy() {
-	banner()
 	color.Cyan("Building the project using gopher defaults...")
 	buildProject()
 }
@@ -351,7 +357,6 @@ func buildAndZip(current_os string, name string) int {
 // generate a scoop manifest file
 func generateScoopFile() {
 
-	banner()
 	color.Cyan("Generating scoop manifest file...")
 	// declare multiple string variables
 	var name, username, version, description, homepage, url string
@@ -503,8 +508,6 @@ func banner() {
 // this funtion will istall the project binary in the user's provate bin directory
 // this will be ~/bin on linux and mac and %USERPROFILE%\bin on windows
 func installProject() {
-
-    banner()
 
     // get project name from go.mod file
     name := getModuleName()
