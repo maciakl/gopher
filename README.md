@@ -104,7 +104,7 @@ Sample screenshot of using `gopher` to create a go project, generate a scoop man
 
 Install via go:
  
-    go install github.com/maciakl/jjmp@latest
+    go install github.com/maciakl/gopher@latest
 
 On Windows, this tool is distributed via `scoop` (see [scoop.sh](https://scoop.sh)).
 
