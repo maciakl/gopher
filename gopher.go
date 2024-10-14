@@ -13,7 +13,7 @@ import (
     cp "github.com/otiai10/copy"
 )
 
-const version = "0.3.3"
+const version = "0.3.4"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/e5d5196713bb404236eb28a5bf9b0183b648a4a9/hello.go"
 
@@ -375,6 +375,7 @@ func generateScoopFile() {
     // check if the module string is a uri
     if strings.Contains(uri, "/") {
         name = getName(uri)
+        username = getUsername(uri)
     } else {
         name = uri
         // ask user for github username since it's not in the module string
@@ -501,10 +502,16 @@ func getModule() string {
 }
 
 
-// function that takes in a github uri and returns the last part of It
+// function that takes in a github uri and returns the last part of it
 func getName(uri string) string {
     parts := strings.Split(uri, "/")
     return parts[len(parts)-1]
+}
+
+// function that takes in a github uri and returns the second to last part of it
+func getUsername(uri string) string {
+    parts := strings.Split(uri, "/")
+    return parts[len(parts)-2]
 }
 
 func banner() {
