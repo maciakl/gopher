@@ -48,6 +48,14 @@ Goper will extract the project `name` from the uri and use it to create the proj
   - create `name.go` with simple hello world code
   - run `git init -b main`
  
+So, for example, if you run:
+
+    gopher init githugb.com/maciakl/test
+
+Gopher will generate the following set of files:
+
+ <img width="108" alt="scr" src="https://github.com/user-attachments/assets/7fbb848b-d1d3-4dca-b206-b0c6f0603002">
+
 ### Building the project
 
 In most cases you should use the following command while in the project directory:
@@ -83,6 +91,25 @@ This will generate `name.json` file that you can add to your scoop bucket using 
 and then use that to create the appropriate URL's for the manifest.
 
 Don't forget to edit the description and verify all the details are correct before uploading the file.
+
+For example, if you run the following commands:
+
+    gopher init github.com/maciakl/test
+    gopher scoop
+
+This will yield the following `test.json` file in the project directory:
+
+```json
+    {
+        "version": "0.1.0",
+        "description": "A new scoop package",
+        "homepage": "https://github.com/maciakl/test",
+        "checkver": "github",
+        "url": "https://github.com/maciakl/test/releases/download/v0.1.0/test_win.zip",
+        "bin": "test.exe",
+        "license": "freeware"
+    }
+```
 
 ### Installing
 
