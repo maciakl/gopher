@@ -5,122 +5,113 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	//"path/filepath"
 	"runtime"
 	"strings"
 
 	"github.com/fatih/color"
-    cp "github.com/otiai10/copy"
+	cp "github.com/otiai10/copy"
 )
 
-const version = "0.3.4"
+const version = "0.4.0"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/e5d5196713bb404236eb28a5bf9b0183b648a4a9/hello.go"
 
 func main() {
 
-    // get number of arguments
-    if len(os.Args) == 1 {
-        banner()
-        color.Red("❌  Missing subcommand.")
-        printUsage()
-        os.Exit(1)
-    }
+	// get number of arguments
+	if len(os.Args) == 1 {
+		banner()
+		color.Red("❌  Missing subcommand.")
+		printUsage()
+		os.Exit(1)
+	}
 
-    // get the first argument
-    arg := os.Args[1]
+	// get the first argument
+	arg := os.Args[1]
 
-    switch arg {
-        case "version", "-version", "--version", "-v":
-            banner()
-            os.Exit(0)
+	switch arg {
+	case "version", "-version", "--version", "-v":
+		banner()
+		os.Exit(0)
 
-        case "help", "-help", "--help", "-h":
-            banner()
-            printUsage()
-            os.Exit(0)
+	case "help", "-help", "--help", "-h":
+		banner()
+		printUsage()
+		os.Exit(0)
 
-        // bootstrap a new project
-        case "init":
-            banner()
+	// bootstrap a new project
+	case "init":
+		banner()
 
-            if len(os.Args) < 3 {
-                color.Red("❌  Missing argument for init subcommand.")
-                printUsage()
-                os.Exit(1)
-            }
+		if len(os.Args) < 3 {
+			color.Red("❌  Missing argument for init subcommand.")
+			printUsage()
+			os.Exit(1)
+		}
 
-            createProject(os.Args[2])
+		createProject(os.Args[2])
 
-            // build the project using make
-            case "make":
-                banner()
-                var target string 
-                if len(os.Args) < 3 {
-                    color.Yellow("⚠  Missing <target> argument for make.")
-                    target = ""
-                } else {
-                    target = os.Args[2]
-                }
-                build(target)
+	// build the project using make
+	case "make":
+		banner()
+		createMakefile()
 
-            // build the project and zip it
-            case "release", "wrap":
-                banner()
-                buildLegacy()
+	// build the project and zip it
+	case "release", "wrap":
+		banner()
+		release()
 
-            // generate a scoop manifest file
-            case "scoop":
-                banner()
-                generateScoopFile()
+	// generate a scoop manifest file
+	case "scoop":
+		banner()
+		generateScoopFile()
 
+	case "install":
+		banner()
+		installProject()
 
-            case "install":
-                banner()
-                installProject()
-
-            // print usage and exit
-            default:
-                banner()
-                color.Red("❌  Unknown subcommand.")
-                printUsage()
-                os.Exit(1)
-    }
+	// print usage and exit
+	default:
+		banner()
+		color.Red("❌  Unknown subcommand.")
+		printUsage()
+		os.Exit(1)
+	}
 }
 
 func printUsage() {
 
-    fmt.Println("\nUsage: gopher [subcommand] <arguments>")
-    fmt.Println("\nSubcommands:")
-    fmt.Println("  init <string>")
-    fmt.Println("        bootstrap a new project with a given <string> name or url")
-    fmt.Println("  make <target>")
-    fmt.Println("        build the project using a Makefile, fall back on release if Makefile is not found")
-    fmt.Println("  release")
-    fmt.Println("        build the project for windows, linux and mac, then and zip the binaries")
-    fmt.Println("  scoop")
-    fmt.Println("        generate a Scoop.sh manifest file for the project")
-    fmt.Println("  install")
-    fmt.Println("        install the project binary in the user's private bin directory")
-    fmt.Println("  version")
-    fmt.Println("        display version number and exit")
-    fmt.Println("  help")
-    fmt.Println("        display this help message and exit")
+	fmt.Println("\nUsage: gopher [subcommand] <arguments>")
+	fmt.Println("\nSubcommands:")
+	fmt.Println("  init <string>")
+	fmt.Println("        bootstrap a new project with a given <string> name or url")
+	fmt.Println("  make")
+	fmt.Println("        create a simple Makefile for the project")
+	fmt.Println("  release")
+	fmt.Println("        build the project for windows, linux and mac, then and zip the binaries")
+	fmt.Println("  scoop")
+	fmt.Println("        generate a Scoop.sh manifest file for the project")
+	fmt.Println("  install")
+	fmt.Println("        install the project binary in the user's private bin directory")
+	fmt.Println("  version")
+	fmt.Println("        display version number and exit")
+	fmt.Println("  help")
+	fmt.Println("        display this help message and exit")
 }
 
 // This function creates a new project with a given name.
 func createProject(uri string) {
 
 	errors := 0
-    var name string
+	var name string
 
-    // check if we got a name or a uri
-    if strings.Contains(uri, "/") {
-        color.Cyan("Detected a github uri, extracting the name...")
-        name = getName(uri)
-    } else {
-        name = uri
-    }
+	// check if we got a name or a uri
+	if strings.Contains(uri, "/") {
+		color.Cyan("Detected a github uri, extracting the name...")
+		name = getName(uri)
+	} else {
+		name = uri
+	}
 
 	// create a new directory
 	color.Cyan("Creating project " + name + "...")
@@ -162,7 +153,7 @@ func createProject(uri string) {
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Error creating README.md file")
-        color.Red(err.Error())
+		color.Red(err.Error())
 		os.Exit(1)
 	}
 	rfile.WriteString("# " + name + "\n")
@@ -203,64 +194,10 @@ func createProject(uri string) {
 
 }
 
-// The build function decides whether to use make or build it using the internal gopher defaults
-func build(target string) {
-
-	color.Cyan("Building the project...")
-	color.Cyan("Checking if Makefile exists in the project directory...")
-
-	// check if Makefile exists in the project directory
-	if _, err := os.Stat("Makefile"); err == nil {
-		color.Cyan("Makefile found in the project directory...")
-        buildProjectWithMake(target)
-	} else {
-        color.Yellow("⚠  Makefile not found in the project directory...")
-		buildProject()
-	}
-
-}
-
-func buildLegacy() {
+func release() {
 	color.Cyan("Building the project using gopher defaults...")
+	color.Cyan("This will create 3 zip files with the executables for windows, mac and linux.")
 	buildProject()
-}
-
-// This function runs the make command to build the project.
-// It assumes make is installed on the system and that Makefile exists in the project directory.
-func buildProjectWithMake(target string) {
-
-	errors := 0
-
-	// change to the current directory (pwd)
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Print("💥 ")
-		color.Red("Error getting the current directory")
-        color.Red(err.Error())
-		os.Exit(1)
-	}
-	os.Chdir(dir)
-
-	// run the make command
-    color.Cyan("Running: make "+target+"")
-    cmd := exec.Command("make", target)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	e := cmd.Run()
-
-	if e != nil {
-		fmt.Print("💥 ")
-		color.Red(e.Error())
-		errors++
-	}
-
-	// print the success message
-	if errors == 0 {
-		color.Green("✔  Project built successfully using the project Makefile.")
-	} else {
-		color.Green("⚠  Project built with some errors.")
-	}
-
 }
 
 // This is gopher's internal function to build the project and zip it
@@ -278,7 +215,7 @@ func buildProject() {
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Error getting the current directory")
-        color.Red(err.Error())
+		color.Red(err.Error())
 		os.Exit(1)
 	}
 	os.Chdir(dir)
@@ -367,21 +304,19 @@ func generateScoopFile() {
 	// declare multiple string variables
 	var name, username, version, description, homepage, url string
 
-
-
 	color.Cyan("Getting module string from go.mod file...")
-    uri := getModule()
+	uri := getModule()
 
-    // check if the module string is a uri
-    if strings.Contains(uri, "/") {
-        name = getName(uri)
-        username = getUsername(uri)
-    } else {
-        name = uri
-        // ask user for github username since it's not in the module string
-        color.Yellow("⭐ Enter your github username and press [ENTER]:")
-        fmt.Scanln(&username)
-    }
+	// check if the module string is a uri
+	if strings.Contains(uri, "/") {
+		name = getName(uri)
+		username = getUsername(uri)
+	} else {
+		name = uri
+		// ask user for github username since it's not in the module string
+		color.Yellow("⭐ Enter your github username and press [ENTER]:")
+		fmt.Scanln(&username)
+	}
 
 	color.Cyan("Getting version from gopher.go file...")
 	version = getVersion(name + ".go")
@@ -412,8 +347,8 @@ func generateScoopFile() {
 	color.Cyan("Creating " + name + ".json file")
 	mfile, err := os.Create(name + ".json")
 	if err != nil {
-		color.Red("Error creating "+name+".json file")
-        color.Red(err.Error())
+		color.Red("Error creating " + name + ".json file")
+		color.Red(err.Error())
 		os.Exit(1)
 	}
 	defer mfile.Close()
@@ -430,7 +365,7 @@ func getVersion(filename string) string {
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Error opening file")
-        color.Red(err.Error())
+		color.Red(err.Error())
 		os.Exit(1)
 	}
 	defer file.Close()
@@ -454,7 +389,7 @@ func getModuleName() string {
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Error opening go.mod file")
-        color.Red(err.Error())
+		color.Red(err.Error())
 		os.Exit(1)
 	}
 	defer file.Close()
@@ -465,14 +400,14 @@ func getModuleName() string {
 		line := scanner.Text()
 		if strings.Contains(line, "module") {
 
-            url := strings.Split(line, " ")[1]
+			url := strings.Split(line, " ")[1]
 
-            // if url contains / then it's a github url an we need to extract the last part
-            if strings.Contains(url, "/") {
-                return getName(url)
-            } else {
-                return url
-            }
+			// if url contains / then it's a github url an we need to extract the last part
+			if strings.Contains(url, "/") {
+				return getName(url)
+			} else {
+				return url
+			}
 		}
 	}
 	return ""
@@ -480,38 +415,37 @@ func getModuleName() string {
 
 // search the go.mod file for the module string and return it
 func getModule() string {
-    // open the file
-    file, err := os.Open("go.mod")
-    if err != nil {
-        fmt.Print("💥 ")
-        color.Red("Error opening go.mod file")
-        color.Red(err.Error())
-        os.Exit(1)
-    }
-    defer file.Close()
+	// open the file
+	file, err := os.Open("go.mod")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error opening go.mod file")
+		color.Red(err.Error())
+		os.Exit(1)
+	}
+	defer file.Close()
 
-    // create a scanner
-    scanner := bufio.NewScanner(file)
-    for scanner.Scan() {
-        line := scanner.Text()
-        if strings.Contains(line, "module") {
-            return strings.Split(line, " ")[1]
-        }
-    }
-    return ""
+	// create a scanner
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "module") {
+			return strings.Split(line, " ")[1]
+		}
+	}
+	return ""
 }
-
 
 // function that takes in a github uri and returns the last part of it
 func getName(uri string) string {
-    parts := strings.Split(uri, "/")
-    return parts[len(parts)-1]
+	parts := strings.Split(uri, "/")
+	return parts[len(parts)-1]
 }
 
 // function that takes in a github uri and returns the second to last part of it
 func getUsername(uri string) string {
-    parts := strings.Split(uri, "/")
-    return parts[len(parts)-2]
+	parts := strings.Split(uri, "/")
+	return parts[len(parts)-2]
 }
 
 func banner() {
@@ -522,84 +456,132 @@ func banner() {
 // this will be ~/bin on linux and mac and %USERPROFILE%\bin on windows
 func installProject() {
 
-    // get project name from go.mod file
-    name := getModuleName()
+	// get project name from go.mod file
+	name := getModuleName()
 
-    color.Cyan("Installing "+name+"...")
+	color.Cyan("Installing " + name + "...")
 
-    // build it for this system first by running go build
-    color.Cyan("Running go build...")
-    cmd := exec.Command("go", "build")
-    cmd.Stdout = os.Stdout
-    cmd.Stderr = os.Stderr
-    e := cmd.Run()
+	// build it for this system first by running go build
+	color.Cyan("Running go build...")
+	cmd := exec.Command("go", "build")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	e := cmd.Run()
 
-    if e != nil {
-        fmt.Print("💥 ")
-        color.Red(e.Error())
-    }
+	if e != nil {
+		fmt.Print("💥 ")
+		color.Red(e.Error())
+	}
 
-    color.Cyan("Checking the os...")
+	color.Cyan("Checking the os...")
 
-    //check if we are on windows
-    if runtime.GOOS == "windows" {
+	//check if we are on windows
+	if runtime.GOOS == "windows" {
 
-        color.Cyan("We are on Windows...")
+		color.Cyan("We are on Windows...")
 
-        // get the user's home directory
-        color.Cyan("Getting the user's home directory...")
-        home := os.Getenv("USERPROFILE")
+		// get the user's home directory
+		color.Cyan("Getting the user's home directory...")
+		home := os.Getenv("USERPROFILE")
 
-        // check if the bin directory exists and bail out if it does not
-        color.Cyan("Checking if the bin directory exists...")
-        if _, err := os.Stat(home + "\\bin"); os.IsNotExist(err) {
-            fmt.Print("💥 ")
-            color.Red("The "+home+"\\bin"+" directory does not exist. Please create it and add it to your path first.")
-            os.Exit(1)
-        }
+		// check if the bin directory exists and bail out if it does not
+		color.Cyan("Checking if the bin directory exists...")
+		if _, err := os.Stat(home + "\\bin"); os.IsNotExist(err) {
+			fmt.Print("💥 ")
+			color.Red("The " + home + "\\bin" + " directory does not exist. Please create it and add it to your path first.")
+			os.Exit(1)
+		}
 
-        // copy the binary to the bin directory
-        color.Cyan("Copying the binary to the bin directory...")
-        
-        // on windows cp is a built in shell feature so we will use the copy library instead
-        err := cp.Copy(name+".exe", home + "\\bin\\" + name + ".exe")
-        if err != nil {
-            fmt.Print("💥 ")
-            color.Red(err.Error())
-            os.Exit(1)
-        }
+		// copy the binary to the bin directory
+		color.Cyan("Copying the binary to the bin directory...")
 
-    } else {
+		// on windows cp is a built in shell feature so we will use the copy library instead
+		err := cp.Copy(name+".exe", home+"\\bin\\"+name+".exe")
+		if err != nil {
+			fmt.Print("💥 ")
+			color.Red(err.Error())
+			os.Exit(1)
+		}
 
-        color.Cyan("We are on Linux or Mac...")
+	} else {
 
-        // get the user's home directory
-        color.Cyan("Getting the user's home directory...")
-        home := os.Getenv("HOME")
+		color.Cyan("We are on Linux or Mac...")
 
+		// get the user's home directory
+		color.Cyan("Getting the user's home directory...")
+		home := os.Getenv("HOME")
 
-        // check if the bin directory exists and bail out if it does not
-        color.Cyan("Checking if the bin directory exists...")
-        if _, err := os.Stat(home + "/bin"); os.IsNotExist(err) {
-            fmt.Print("💥 ")
-            color.Red("The "+home+"/bin"+" directory does not exist. Please create it and add it to your path first.")
-            os.Exit(1)
-        }
+		// check if the bin directory exists and bail out if it does not
+		color.Cyan("Checking if the bin directory exists...")
+		if _, err := os.Stat(home + "/bin"); os.IsNotExist(err) {
+			fmt.Print("💥 ")
+			color.Red("The " + home + "/bin" + " directory does not exist. Please create it and add it to your path first.")
+			os.Exit(1)
+		}
 
-        // copy the binary to the bin directory
-        color.Cyan("Copying the binary to the bin directory...")
-        cmd := exec.Command("cp", name, home + "/bin")
-        cmd.Stdout = os.Stdout
-        cmd.Stderr = os.Stderr
-        e := cmd.Run()
+		// copy the binary to the bin directory
+		color.Cyan("Copying the binary to the bin directory...")
+		cmd := exec.Command("cp", name, home+"/bin")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		e := cmd.Run()
 
-        if e != nil {
-            fmt.Print("💥 ")
-            color.Red(e.Error())
-            os.Exit(1)
-        }
+		if e != nil {
+			fmt.Print("💥 ")
+			color.Red(e.Error())
+			os.Exit(1)
+		}
 
-    }
+	}
 
-    color.Green("✔  "+name+" installed successfully.")
+	color.Green("✔  " + name + " installed successfully.")
+}
+
+func createMakefile() {
+
+	color.Cyan("Creating Makefile...")
+
+	color.Cyan("Getting module name from go.mod file...")
+	name := getModuleName()
+
+	color.Cyan("Generating the Makefile content...")
+	content := fmt.Sprintf(`BINARY_NAME=%s
+
+.PHONY: build
+build: tidy
+	go build
+
+.PHONY: clean
+clean: tidy
+	go clean
+
+.PHONY: run
+run: tidy build
+	./$(BINARY_NAME)
+
+.PHONY: tidy
+tidy:
+	go mod tidy
+	go fmt ./...
+	go vet ./...
+	go mod verify
+
+.PHONY: test
+test: tidy
+	go test`, name)
+
+	color.Cyan("Creating the Makefile file on disk...")
+
+	mfile, err := os.Create("Makefile")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error creating Makefile")
+		color.Red(err.Error())
+		os.Exit(1)
+	}
+	defer mfile.Close()
+
+	color.Cyan("Writing the Makefile content to disk...")
+	mfile.WriteString(content)
+	color.Green("✔  Makefile created successfully.")
 }
