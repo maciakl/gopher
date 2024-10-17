@@ -12,7 +12,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.4.0"
+const version = "0.4.1"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/e5d5196713bb404236eb28a5bf9b0183b648a4a9/hello.go"
 
@@ -51,10 +51,15 @@ func main() {
 
 		createProject(os.Args[2])
 
-	// build the project using make
+	// create a Makefile for the project
 	case "make":
 		banner()
 		createMakefile()
+
+	// create a Justfile for the Project
+	case "just":
+		banner()
+		createJustfile()
 
 	// build the project and zip it
 	case "release", "wrap":
@@ -87,6 +92,8 @@ func printUsage() {
 	fmt.Println("        bootstrap a new project with a given <string> name or url")
 	fmt.Println("  make")
 	fmt.Println("        create a simple Makefile for the project")
+	fmt.Println("  just")
+	fmt.Println("        create a simple Justfile for the project")
 	fmt.Println("  release")
 	fmt.Println("        build the project for windows, linux and mac, then and zip the binaries")
 	fmt.Println("  scoop")
@@ -584,4 +591,47 @@ test: tidy
 	color.Cyan("Writing the Makefile content to disk...")
 	mfile.WriteString(content)
 	color.Green("✔  Makefile created successfully.")
+}
+
+func createJustfile() {
+
+	color.Cyan("Creating Justfile...")
+
+	color.Cyan("Getting module name from go.mod file...")
+	name := getModuleName()
+
+	color.Cyan("Generating the Justfile content...")
+	content := fmt.Sprintf(`BINARY_NAME := "%s"
+
+build: tidy
+	go build
+
+clean: tidy
+	go clean
+
+run: tidy build
+	./{{BINARY_NAME}}
+
+tidy:
+	go mod tidy
+	go fmt ./...
+	go vet ./...
+	go mod verify
+
+test: tidy
+	go test`, name)
+
+	color.Cyan("Creating the Justfile file on disk...")
+	jfile, err := os.Create("Justfile")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error creating Justfile")
+		color.Red(err.Error())
+		os.Exit(1)
+	}
+	defer jfile.Close()
+
+	color.Cyan("Writing the Justfile content to disk...")
+	jfile.WriteString(content)
+	color.Green("✔  Justfile created successfully.")
 }
