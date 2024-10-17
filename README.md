@@ -7,8 +7,10 @@ A minimal go project bootstrapping tool.
     Subcommands:
       init <string>
             bootstrap a new project with a given <string> name or url
-      make <target>
-            build the project using a Makefile, fall back on release if no Makefile is present
+      make
+            create a simple Makefile for the project
+      just
+            create a simple Justfile for the project  
       release
             build the project for windows, linux and mac, then and zip the binaries
       scoop
@@ -25,7 +27,7 @@ A minimal go project bootstrapping tool.
 Currently gopher supports 5 actions.
 
 - Bootstraping a project `init`
-- Building a project using a Makefile `make`
+- Generating build files using `make` and `just`
 - Building and packaging a project `release`
 - Installing a project `install`
 - Creating a [Scoop.sh](https://scoop.sh) manifest `scoop`
@@ -56,17 +58,19 @@ Gopher will generate the following set of files:
 
  <img width="108" alt="scr" src="https://github.com/user-attachments/assets/7fbb848b-d1d3-4dca-b206-b0c6f0603002">
 
-### Building the project
+### Generating Build Files
 
-In most cases you should use the following command while in the project directory:
+You can use the `gopher` tool to creathe simple build files for your project. To create a simple `Makefile` run:
 
-    gopher make <target>
+    gopher make
 
-If you do:
+This will create a simple `Makefile` with couple of targets such as `build`, `run`, `clean`, `tidy` and `test`.
 
-- Gopher will check if a `Makefile` exists in the project directory
-- If it does, it will run the make command with the specified <target> or will just run `make` if no target is specified
-- If there is no `Makefile`, it will warn you and switch to doing `gopher release`
+You can also create an equivalent build file for [Just](https://github.com/casey/just) task runner by running:
+
+    gopher just
+
+These build files are intended to be scaffolding that you are encouraged to customize to fit your project.
 
 ### Releasing a project
 
