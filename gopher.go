@@ -12,7 +12,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.4.1"
+const version = "0.4.2"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/e5d5196713bb404236eb28a5bf9b0183b648a4a9/hello.go"
 
@@ -559,11 +559,13 @@ build: tidy
 	go build
 
 .PHONY: clean
-clean: tidy
+clean:
 	go clean
+	rm $(BINARY_NAME)_*.zip
+    
 
 .PHONY: run
-run: tidy build
+run: build
 	./$(BINARY_NAME)
 
 .PHONY: tidy
@@ -574,7 +576,7 @@ tidy:
 	go mod verify
 
 .PHONY: test
-test: tidy
+test: build
 	go test`, name)
 
 	color.Cyan("Creating the Makefile file on disk...")
@@ -606,10 +608,12 @@ func createJustfile() {
 build: tidy
 	go build
 
-clean: tidy
+clean:
 	go clean
+	rm {{BINARY_NAME}}_*.zip
+    
 
-run: tidy build
+run: build
 	./{{BINARY_NAME}}
 
 tidy:
@@ -618,7 +622,7 @@ tidy:
 	go vet ./...
 	go mod verify
 
-test: tidy
+test: build
 	go test`, name)
 
 	color.Cyan("Creating the Justfile file on disk...")
