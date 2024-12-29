@@ -1,4 +1,4 @@
-module gopher
+module github.com/maciakl/gopher
 
 go 1.21
 

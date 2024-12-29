@@ -12,7 +12,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.4.2"
+const version = "0.4.3"
 
 const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/e5d5196713bb404236eb28a5bf9b0183b648a4a9/hello.go"
 
