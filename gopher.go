@@ -12,9 +12,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.4.3"
-
-const templateUrl = "https://gist.githubusercontent.com/maciakl/b5877bcb8b1ad21e2e798d3da3bff13b/raw/e5d5196713bb404236eb28a5bf9b0183b648a4a9/hello.go"
+const version = "0.5.0"
 
 func main() {
 
@@ -138,6 +136,8 @@ func createProject(uri string) {
 		errors++
 	}
 
+    color.Blue("🆗 go module initiated.")
+
 	// create .gitignore file
 	color.Cyan("Creating .gitignore file...")
 	gfile, err := os.Create(".gitignore")
@@ -154,6 +154,8 @@ func createProject(uri string) {
 	gfile.WriteString(name + "_*.tgz\n")
 	gfile.Close()
 
+    color.Blue("🆗 .gitignore file created.")
+
 	// create README.md file
 	color.Cyan("Creating README.md file...")
 	rfile, err := os.Create("README.md")
@@ -166,18 +168,10 @@ func createProject(uri string) {
 	rfile.WriteString("# " + name + "\n")
 	rfile.Close()
 
-	// download [name].go file fom the gist template url
-	color.Cyan("Creating " + name + ".go file")
-	cmd = exec.Command("curl", "-o", name+".go", templateUrl)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	e = cmd.Run()
+    color.Blue("🆗 README file created.")
 
-	if e != nil {
-		fmt.Print("💥 ")
-		color.Red(e.Error())
-		errors++
-	}
+    // create a simple main.go file
+    createMainFile()
 
 	// run the git init command with -b main
 	color.Cyan("Running git init -b main...")
@@ -190,7 +184,9 @@ func createProject(uri string) {
 		fmt.Print("💥 ")
 		color.Red(e.Error())
 		errors++
-	}
+	} 
+
+    color.Blue("🆗 git repository initiated.")
 
 	// print the success message
 	if errors == 0 {
@@ -234,15 +230,25 @@ func buildProject() {
 
 	// run the go build command for the common operating systems
 	color.Cyan("Attempting to cross-compile the project for windows, mac and linux...")
+
+    werrors, lerrors, merrors := 0, 0, 0
+
 	errors += buildAndZip("windows", name)
+    if werrors == 0 { color.Blue("🆗 Windows build successful.") }
+
 	errors += buildAndZip("linux", name)
+    if lerrors == 0 { color.Blue("🆗 Linux build successful.") }
+
 	errors += buildAndZip("darwin", name)
+    if merrors == 0 { color.Blue("🆗 Mac build successful.") }
+
+    errors += werrors + lerrors + merrors
 
 	// print the success message
 	if errors == 0 {
-		color.Green("✔  Project " + name + " wrapped successfully.")
+		color.Green("✔  Project " + name + " released successfully.")
 	} else {
-		color.Green("⚠  Project " + name + " wrapped with some errors.")
+		color.Green("⚠  Project " + name + " released with some errors.")
 	}
 
 }
@@ -639,3 +645,63 @@ test: build
 	jfile.WriteString(content)
 	color.Green("✔  Justfile created successfully.")
 }
+
+func createMainFile() {
+
+    color.Cyan("Getting module name from go.mod file contents...")
+    name := getModuleName()
+
+    color.Cyan("Generating the " + name + ".go file...")
+    content := `package main    
+
+import (
+"os"
+"fmt"
+"path/filepath"
+)
+
+const version = "0.1.0"
+
+func main() {
+
+    if len(os.Args) > 1 {
+        switch os.Args[1] {
+        case "-v", "--version":
+            Version()
+        case "-h", "--help":
+            Usage()
+        default:
+            Usage()
+        } 
+    } else {
+        Usage()
+    }
+}
+
+func Version() {
+    fmt.Println(filepath.Base(os.Args[0]), "version", version)
+    os.Exit(0)
+}
+
+func Usage() {
+    fmt.Println("Usage:", filepath.Base(os.Args[0]), "[options]")
+    fmt.Println("Options:")
+    fmt.Println("  -v, --version    Print version information and exit")
+    fmt.Println("  -h, --help       Print this message and exit")
+    os.Exit(0)
+}`
+
+    color.Cyan("Creating the " + name + ".go file on disk...")
+    gfile, err := os.Create(name + ".go")
+    if err != nil {
+        fmt.Print("💥 ")
+        color.Red("Error creating " + name + ".go file")
+        color.Red(err.Error())
+        os.Exit(1)
+    }
+
+    color.Cyan("Writing the " + name + ".go file content to disk...")
+    gfile.WriteString(content)
+    color.Blue("🆗 " + name + ".go file created successfully.")
+}
+
