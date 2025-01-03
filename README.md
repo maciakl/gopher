@@ -67,9 +67,17 @@ So, for example, if you run:
 
     gopher init github.com/maciakl/test
 
-Gopher will generate the following set of files:
+Gopher will generate the following folder structure:
 
- <img width="108" alt="scr" src="https://github.com/user-attachments/assets/7fbb848b-d1d3-4dca-b206-b0c6f0603002">
+    test/
+     |
+     +--- .gitignore
+     |
+     +--- go.mod
+     |
+     +--- README.md
+     |
+     +--- test.go
 
 ### Generating Build Files
 
