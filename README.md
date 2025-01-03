@@ -1,6 +1,6 @@
 # 🐿 gopher
 
-A minimal go project bootstrapping tool.
+A minimal, oppinionated go project bootstrapping tool.
 
     Usage: gopher [subcommand] <arguments>
 
@@ -31,10 +31,6 @@ Currently gopher supports 5 actions.
 - Building and packaging a project `release`
 - Installing a project `install`
 - Creating a [Scoop.sh](https://scoop.sh) manifest `scoop`
-
-## Configuration (optional)
-
-To make your life easier, you can create an environment variable named `GOPHER_USERNAME` and set it to your github username. Gopher will then use that variable whenever it needs to do anything github related.
 
 ### Create a new project
 
@@ -132,21 +128,47 @@ This will yield the following `test.json` file in the project directory:
     }
 ```
 
-### Installing
+### Installing a project binary
 
 To install the project on your system run
 
     gopher install
 
-This will rebuild the project using `go build` and then copy the executable to your private user directory. This is `~/bin/` on mac/linux or `%USERPROFILE%\bin\` on windows. If such directory does not exist, gopher will bail out with an error.
+This will rebuild the project using `go build` and then copy the executable to a directory defined in your `GOPHER_INSTALLPATH` environment variable. If this variable is not set, gopher will attempt to use `~/bin/` on mac/linux or `%USERPROFILE%\bin\` on windows. 
 
-⚠️ Note: you must create the `bin` directory and add it to your `PATH` manually, gopher won't do that for you
+If such directory does not exist, gopher will bail out with an error.
+
+⚠️ Note: you must create the directory and add it to your `PATH` manually, gopher won't do that for you
+
+## Configuration (optional)
+
+You can configure gopher by setting appropriate envionment variables.
+
+Following settings are currently supported:
+
+| Environment Variable | Description |
+| --- | --- |
+| `GOPHER_USERNAME` | Your GitHub username. Setting this variable will prevent gopher from asking you to type it in. |
+| `GOPHER_INSTALLPATH` | Default binary install location. If this variable is not set, gopher will try to use `~/bin` (or `%USERPROFILE%\bin` on Windows). |
+
+Use your preferred method for setting environment variables appropriate for your OS. Here are some examples:
+
+Powershell on Windows, put this is `$PROFILE`:
+
+    $env:GOPHER_USERNAME="maciakl"
+    $env:GOPHER_INSTALLPATH="c:\Tools"
+
+Zsh on Linux, put this in your `.zshrc`:
+
+    export GOPHER_USERNAME=maciakl
+    export GOPHER_INSTALLPATH=/opt/gopher/
+
 
 ## Examples
 
 Sample screenshot of using `gopher` to create a go project, generate a scoop manifest and compiling release files for windows, linux and mac (all done in Powershell on Windows):
 
-![gopher](https://github.com/user-attachments/assets/88c54157-4e5c-435a-b9d9-dd8f24734a3f)
+![scr2](https://github.com/user-attachments/assets/916d93d6-6e1a-480e-beeb-c3c631903c46)
 
 ## Installing
 
