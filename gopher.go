@@ -12,7 +12,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.5.1"
+const version = "0.5.2"
 
 func main() {
 
@@ -377,14 +377,26 @@ func generateScoopFile() {
 		username = getUsername(uri)
 	} else {
 		name = uri
-		// ask user for github username since it's not in the module string
-		color.Red("🛑 STOP: INPUT REQUIRED")
-		color.Red("❓ Enter your github username and press [ENTER]:")
-		fmt.Scanln(&username)
+        // check if the username is in an environment variable
+        color.Cyan("Checking if GOPHER_USERNAME environment variable is set...")
+        username = os.Getenv("GOPHER_USERNAME")
+
+        if username == "" {
+            color.Yellow("⚠  GOPHER_USERNAME environment variable is not set.")
+            // ask user for github username since it's not in the module string
+            color.Red("🛑 STOP: INPUT REQUIRED")
+            fmt.Print("❓ Enter your github username and press [ENTER]: ")
+            fmt.Scanln(&username)
+        }
 	}
+
+    color.Blue("🆗 Got the project name: " + name)
+    color.Blue("🆗 Got your github username: " + username)
 
 	color.Cyan("Getting version from gopher.go file...")
 	version = getVersion(name + ".go")
+
+    color.Blue("🆗 Got the project version: " + version)
 
 	color.Cyan("Adding generic description, you can edit it later...")
 	description = "A new scoop package"
@@ -392,8 +404,12 @@ func generateScoopFile() {
 	color.Cyan("Creating the homepage url...")
 	homepage = "https://github.com/" + username + "/" + name
 
+    color.Blue("🆗 Homepage url: " + homepage)
+
 	color.Cyan("Creating the download url...")
 	url = "https://github.com/" + username + "/" + name + "/releases/download/v" + version + "/" + name + "_win.zip"
+
+    color.Blue("🆗 Download url: " + url)
 
 	color.Cyan("Creating the scoop manifest...")
 
@@ -408,6 +424,8 @@ func generateScoopFile() {
     "license": "freeware"
 }`, version, description, homepage, url, name+".exe")
 
+    color.Blue("🆗 Manifest created successfully.")
+
 	// write the manifest to the file
 	color.Cyan("Creating " + name + ".json file")
 	mfile, err := os.Create(name + ".json")
@@ -417,6 +435,8 @@ func generateScoopFile() {
 		os.Exit(1)
 	}
 	defer mfile.Close()
+
+    color.Blue("🆗 file created successfully.")
 
 	mfile.WriteString(manifest)
 	color.Green("✔  Scoop manifest file " + name + ".json created successfully.")
@@ -538,6 +558,16 @@ func installProject() {
 		color.Red(e.Error())
 	}
 
+    // check if environment variable GOPHER_ISTALLPATH is set
+    color.Cyan("Checking if GOPHER_INSTALLPATH environment variable is set...")
+    installpath := os.Getenv("GOPHER_INSTALLPATH")
+
+    if installpath == "" {
+        color.Yellow("⚠  GOPHER_INSTALLPATH environment variable is not set.")
+        color.White("💬 You can set it to the directory where you want gopher to install all the binaries.")
+        color.White("💬 Gopher will use ~/bin or %USERPROFILE%\\bin if GOPHER_INSTALLPATH is not set.")
+    }
+
 	color.Cyan("Checking the os...")
 
 	//check if we are on windows
@@ -545,15 +575,19 @@ func installProject() {
 
 		color.Cyan("We are on Windows...")
 
-		// get the user's home directory
-		color.Cyan("Getting the user's home directory...")
-		home := os.Getenv("USERPROFILE")
+        if installpath == "" {
+            // get the user's home directory
+            color.Cyan("Getting the user's home directory...")
+            home := os.Getenv("USERPROFILE")
+            installpath = home + "\\bin"
+        }
+        color.Blue("🆗 Attempting to install to: " + installpath)
 
 		// check if the bin directory exists and bail out if it does not
-		color.Cyan("Checking if the bin directory exists...")
-		if _, err := os.Stat(home + "\\bin"); os.IsNotExist(err) {
+		color.Cyan("Checking if the install directory exists...")
+		if _, err := os.Stat(installpath); os.IsNotExist(err) {
 			fmt.Print("💥 ")
-			color.Red("The " + home + "\\bin" + " directory does not exist. Please create it and add it to your path first.")
+			color.Red("The " + installpath + " directory does not exist. Please create it and add it to your path first.")
 			os.Exit(1)
 		}
 
@@ -561,7 +595,7 @@ func installProject() {
 		color.Cyan("Copying the binary to the bin directory...")
 
 		// on windows cp is a built in shell feature so we will use the copy library instead
-		err := cp.Copy(name+".exe", home+"\\bin\\"+name+".exe")
+		err := cp.Copy(name+".exe", installpath+"\\"+name+".exe")
 		if err != nil {
 			fmt.Print("💥 ")
 			color.Red(err.Error())
@@ -572,21 +606,26 @@ func installProject() {
 
 		color.Cyan("We are on Linux or Mac...")
 
-		// get the user's home directory
-		color.Cyan("Getting the user's home directory...")
-		home := os.Getenv("HOME")
+        if installpath == "" {
+            // get the user's home directory
+            color.Cyan("Getting the user's home directory...")
+            home := os.Getenv("HOME")
+            installpath = home + "/bin"
+        }
+
+        color.Blue("🆗 Attempting to install to: " + installpath)
 
 		// check if the bin directory exists and bail out if it does not
 		color.Cyan("Checking if the bin directory exists...")
-		if _, err := os.Stat(home + "/bin"); os.IsNotExist(err) {
+		if _, err := os.Stat(installpath); os.IsNotExist(err) {
 			fmt.Print("💥 ")
-			color.Red("The " + home + "/bin" + " directory does not exist. Please create it and add it to your path first.")
+			color.Red("The " + installpath + " directory does not exist. Please create it and add it to your path first.")
 			os.Exit(1)
 		}
 
 		// copy the binary to the bin directory
 		color.Cyan("Copying the binary to the bin directory...")
-		cmd := exec.Command("cp", name, home+"/bin")
+		cmd := exec.Command("cp", name, installpath)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		e := cmd.Run()
@@ -599,7 +638,10 @@ func installProject() {
 
 	}
 
-	color.Green("✔  " + name + " installed successfully.")
+    color.Blue("🆗 copy successful.")
+
+    color.White("💬 Make sure " + installpath + " is in your PATH")
+	color.Green("✔  " + name + " installed successfully into " + installpath)
 }
 
 func createMakefile() {
