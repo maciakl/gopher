@@ -4,5 +4,4 @@ gopher.zip
 gopher_*.zip
 gopher_*.tgz
 test
-Justfile
 Makefile

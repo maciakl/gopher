@@ -12,7 +12,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.5.0"
+const version = "0.5.1"
 
 func main() {
 
@@ -108,15 +108,45 @@ func printUsage() {
 func createProject(uri string) {
 
 	errors := 0
-	var name string
+	var name, username string
 
 	// check if we got a name or a uri
 	if strings.Contains(uri, "/") {
 		color.Cyan("Detected a github uri, extracting the name...")
 		name = getName(uri)
+		username = getUsername(uri)
 	} else {
+		color.Yellow("⚠  project name is not a github URI")
+		color.Cyan("Checking if GOPHER_USERNAME environment variable is set...")
+
+		// get the value of GOPHER_USERNAME environment variable
+		gh_username := os.Getenv("GOPHER_USERNAME")
+
+		if gh_username == "" {
+			color.Yellow("⚠  GOPHER_USERNAME environment variable is not set.")
+			color.Red("🛑 STOP: INPUT REQUIRED")
+			fmt.Print("❓Enter your github username and press [ENTER]: ")
+			fmt.Scanln(&gh_username)
+			color.White("💬 Don't want to be asked again? Use a github uri when initializing the project.")
+			color.White("💬 Example: gopher init github.com/username/project")
+			color.White("💬 Alternatively set the GOPHER_USERNAME environment variable.")
+		}
+
+		color.Blue("🆗 Got your github username: " + gh_username)
 		name = uri
+		username = gh_username
+		uri = "github.com/" + gh_username + "/" + name
 	}
+
+	gh_origin := "git@github.com:" + username + "/" + name + ".git"
+
+	fmt.Println()
+	color.White("📝 Project information:")
+	color.White("  Project Name:\t" + name)
+	color.White("  Github user: \t" + username)
+	color.White("  Github URI: \t" + uri)
+	color.White("  Github repo: \t" + gh_origin)
+	fmt.Println()
 
 	// create a new directory
 	color.Cyan("Creating project " + name + "...")
@@ -136,7 +166,7 @@ func createProject(uri string) {
 		errors++
 	}
 
-    color.Blue("🆗 go module initiated.")
+	color.Blue("🆗 go module initiated.")
 
 	// create .gitignore file
 	color.Cyan("Creating .gitignore file...")
@@ -154,7 +184,7 @@ func createProject(uri string) {
 	gfile.WriteString(name + "_*.tgz\n")
 	gfile.Close()
 
-    color.Blue("🆗 .gitignore file created.")
+	color.Blue("🆗 .gitignore file created.")
 
 	// create README.md file
 	color.Cyan("Creating README.md file...")
@@ -168,10 +198,10 @@ func createProject(uri string) {
 	rfile.WriteString("# " + name + "\n")
 	rfile.Close()
 
-    color.Blue("🆗 README file created.")
+	color.Blue("🆗 README file created.")
 
-    // create a simple main.go file
-    createMainFile()
+	// create a simple main.go file
+	createMainFile()
 
 	// run the git init command with -b main
 	color.Cyan("Running git init -b main...")
@@ -184,9 +214,25 @@ func createProject(uri string) {
 		fmt.Print("💥 ")
 		color.Red(e.Error())
 		errors++
-	} 
+	}
 
-    color.Blue("🆗 git repository initiated.")
+	color.Blue("🆗 git repository initiated.")
+
+	// add github as irigin
+	color.Cyan("Running git remote add origin...")
+	cmd = exec.Command("git", "remote", "add", "origin", gh_origin)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	e = cmd.Run()
+
+	if e != nil {
+		fmt.Print("💥 ")
+		color.Red(e.Error())
+		errors++
+	}
+
+	color.Blue("🆗 new origin repository added.")
+	color.White("💬  You can run git push -u origin main to push your project to github.")
 
 	// print the success message
 	if errors == 0 {
@@ -194,7 +240,6 @@ func createProject(uri string) {
 	} else {
 		color.Green("⚠  Project " + name + " created with some errors.")
 	}
-
 }
 
 func release() {
@@ -231,18 +276,24 @@ func buildProject() {
 	// run the go build command for the common operating systems
 	color.Cyan("Attempting to cross-compile the project for windows, mac and linux...")
 
-    werrors, lerrors, merrors := 0, 0, 0
+	werrors, lerrors, merrors := 0, 0, 0
 
 	errors += buildAndZip("windows", name)
-    if werrors == 0 { color.Blue("🆗 Windows build successful.") }
+	if werrors == 0 {
+		color.Blue("🆗 Windows build successful.")
+	}
 
 	errors += buildAndZip("linux", name)
-    if lerrors == 0 { color.Blue("🆗 Linux build successful.") }
+	if lerrors == 0 {
+		color.Blue("🆗 Linux build successful.")
+	}
 
 	errors += buildAndZip("darwin", name)
-    if merrors == 0 { color.Blue("🆗 Mac build successful.") }
+	if merrors == 0 {
+		color.Blue("🆗 Mac build successful.")
+	}
 
-    errors += werrors + lerrors + merrors
+	errors += werrors + lerrors + merrors
 
 	// print the success message
 	if errors == 0 {
@@ -327,7 +378,8 @@ func generateScoopFile() {
 	} else {
 		name = uri
 		// ask user for github username since it's not in the module string
-		color.Yellow("⭐ Enter your github username and press [ENTER]:")
+		color.Red("🛑 STOP: INPUT REQUIRED")
+		color.Red("❓ Enter your github username and press [ENTER]:")
 		fmt.Scanln(&username)
 	}
 
@@ -648,11 +700,11 @@ test: build
 
 func createMainFile() {
 
-    color.Cyan("Getting module name from go.mod file contents...")
-    name := getModuleName()
+	color.Cyan("Getting module name from go.mod file contents...")
+	name := getModuleName()
 
-    color.Cyan("Generating the " + name + ".go file...")
-    content := `package main    
+	color.Cyan("Generating the " + name + ".go file...")
+	content := `package main    
 
 import (
 "os"
@@ -691,17 +743,16 @@ func Usage() {
     os.Exit(0)
 }`
 
-    color.Cyan("Creating the " + name + ".go file on disk...")
-    gfile, err := os.Create(name + ".go")
-    if err != nil {
-        fmt.Print("💥 ")
-        color.Red("Error creating " + name + ".go file")
-        color.Red(err.Error())
-        os.Exit(1)
-    }
+	color.Cyan("Creating the " + name + ".go file on disk...")
+	gfile, err := os.Create(name + ".go")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error creating " + name + ".go file")
+		color.Red(err.Error())
+		os.Exit(1)
+	}
 
-    color.Cyan("Writing the " + name + ".go file content to disk...")
-    gfile.WriteString(content)
-    color.Blue("🆗 " + name + ".go file created successfully.")
+	color.Cyan("Writing the " + name + ".go file content to disk...")
+	gfile.WriteString(content)
+	color.Blue("🆗 " + name + ".go file created successfully.")
 }
-
