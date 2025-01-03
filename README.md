@@ -32,6 +32,10 @@ Currently gopher supports 5 actions.
 - Installing a project `install`
 - Creating a [Scoop.sh](https://scoop.sh) manifest `scoop`
 
+## Configuration (optional)
+
+To make your life easier, you can create an environment variable named `GOPHER_USERNAME` and set it to your github username. Gopher will then use that variable whenever it needs to do anything github related.
+
 ### Create a new project
 
 To create a new go project run:
@@ -40,19 +44,32 @@ To create a new go project run:
 
 The `<string>` can be a project name or a git repository uri (without https:// part).
 
-Goper will extract the project `name` from the uri and use it to create the project. Then it will:
+If you provide a valid uri, gopher will extract following information from it: 
 
-- create a folder `name`
+- the `project_name` from the uri and use it to create the project.
+- your `github_username`
+- the github `repository_address` (ssh format)
+
+If all you provided was a project name gopher will try the following:
+
+1. Check if `GOPHER_USERNAME` variable is set, and if so use it's contents as your `github_username`
+2. If the variable is not set, gopher will stop and ask you to type in your `github_username`
+3. Construct the `uri` and `repo_address` from the above
+
+Once it knows all the relevant information it will do the following:
+
+- create a folder `project_name`
 - inside it will:
   - run `go mod init uri`
   - create `.gitignore` file
   - create `README.md` file
   - create `name.go` with simple hello world code
   - run `git init -b main`
+  - run `git remote add origin repo_address`
  
 So, for example, if you run:
 
-    gopher init githugb.com/maciakl/test
+    gopher init github.com/maciakl/test
 
 Gopher will generate the following set of files:
 
