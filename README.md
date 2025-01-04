@@ -17,6 +17,8 @@ A minimal, oppinionated go project bootstrapping tool.
             generate a Scoop.sh manifest file for the project
       install
             install the project binary in the user's private bin directory
+      bump <string>
+            bump the major, minor, or build version number in the main file
       version
             display version number and exit
       help
@@ -24,13 +26,14 @@ A minimal, oppinionated go project bootstrapping tool.
 
 ## Using the tool
 
-Currently gopher supports 5 actions.
+Currently gopher supports 7 actions.
 
 - Bootstraping a project `init`
 - Generating build files using `make` and `just`
 - Building and packaging a project `release`
 - Installing a project `install`
 - Creating a [Scoop.sh](https://scoop.sh) manifest `scoop`
+- Bumping the version number in your main file to the next one
 
 ### Create a new project
 
@@ -147,6 +150,26 @@ This will rebuild the project using `go build` and then copy the executable to a
 If such directory does not exist, gopher will bail out with an error.
 
 ⚠️ Note: you must create the directory and add it to your `PATH` manually, gopher won't do that for you
+
+### Bumping
+
+The `bump` subcommand will search your code for a line that looks something like this:
+
+    const version = "1.2.3"
+
+It will parse out the current version number, and increment and/or update the appropriate digits.
+
+The different digits are called: `MAJOR.MINOR.BUILD`.
+
+You can use the following subcommands:
+
+| Command | Current Version | New Version |
+| --- | --- | --- |
+| `gopher bump build` | `A.B.C` | `A.B.C+1` |
+| `gopher bump minor` | `A.B.C` | `A.B+1.0` |
+| `gopher bump major` | `A.B.C` | `A+1.0.0` |
+
+⚠️ Note: just in case, commit your changes before using this command as your file is edited in place, so if something goes horribly wrong, you might lose work.
 
 ## Configuration (optional)
 
