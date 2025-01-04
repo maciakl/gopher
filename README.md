@@ -2,6 +2,8 @@
 
 A minimal, oppinionated go project bootstrapping tool.
 
+Gopher will bootstrap a project with sensible defaults, and provide additional project management tooling for writing simple command line appssuch as [weather](https://github.com/maciakl/weather), [jjmp](https://github.com/maciakl/jjmp), [myip](https://github.com/maciakl/myip) or itself. It is not intended to be used for web based projects, GUI applications, services or large projects.
+
     Usage: gopher [subcommand] <arguments>
 
     Subcommands:
