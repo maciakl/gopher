@@ -4,15 +4,17 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+    "bytes"
 	"os/exec"
 	"runtime"
 	"strings"
+    "strconv"
 
 	"github.com/fatih/color"
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.5.2"
+const version = "0.6.0"
 
 func main() {
 
@@ -73,6 +75,18 @@ func main() {
 		banner()
 		installProject()
 
+    // bump version number
+    case "bump":
+        banner()
+
+        if len(os.Args) < 2 {
+            color.Red("❌  Missing argument for bump subcommand.")
+            printUsage()
+            os.Exit(1)
+        }
+
+        versionBump(os.Args[2])
+
 	// print usage and exit
 	default:
 		banner()
@@ -98,6 +112,8 @@ func printUsage() {
 	fmt.Println("        generate a Scoop.sh manifest file for the project")
 	fmt.Println("  install")
 	fmt.Println("        install the project binary in the user's private bin directory")
+    fmt.Println("  bump <string>")
+    fmt.Println("        bump the major, minor, or build version number in the main file")
 	fmt.Println("  version")
 	fmt.Println("        display version number and exit")
 	fmt.Println("  help")
@@ -797,4 +813,84 @@ func Usage() {
 	color.Cyan("Writing the " + name + ".go file content to disk...")
 	gfile.WriteString(content)
 	color.Blue("🆗 " + name + ".go file created successfully.")
+}
+
+func incString(s string) string {
+    n, _ := strconv.Atoi(s)
+    return strconv.Itoa(n + 1)
+}
+
+
+// bump the version number in the version constant of the main file
+func versionBump(what string) {
+
+    if what != "major" && what != "minor" && what != "build" {
+        fmt.Print("💥 ")
+        color.Red("Invalid argument for bump subcommand.")
+        printUsage()
+        os.Exit(1)
+    }
+
+    // get the module name from go.mod file
+    color.Cyan("Getting module name from go.mod file...")
+    name := getModuleName()
+
+    // get the current version
+    color.Cyan("Getting current version from " + name + ".go file...")
+    version := getVersion(name + ".go")
+
+    color.Blue("🆗 Current version is " + version)
+    color.Cyan("Bumping the version number...")
+
+    // split the version into parts
+    parts := strings.Split(version, ".")
+    major := parts[0]
+    minor := parts[1]
+    build := parts[2]
+
+    // increment the build number
+    if what == "build" {
+        build = incString(build)
+    } else if what == "minor" {
+        minor = incString(minor)
+        build = "0"
+    } else if what == "major" {
+        major = incString(major)
+        minor = "0"
+        build = "0"
+    }
+
+    // create the new version string
+    new_version := major + "." + minor + "." + build
+
+    color.Blue("🆗 New version is " + new_version)
+
+    // read the file into memory
+    file, err := os.ReadFile(name + ".go")
+    if err != nil {
+        fmt.Print("💥 ")
+        color.Red("Error reading file")
+        color.Red(err.Error())
+        os.Exit(1)
+    }
+
+    color.Cyan("Replacing the version number in " + name + ".go file...")
+
+    find := "const version = \"" + version + "\""
+    replace := "const version = \"" + new_version + "\""
+
+    file = bytes.Replace(file, []byte(find), []byte(replace), -1)
+
+    // write the file back to disk
+    err = os.WriteFile(name+".go", file, 0644)
+    if err != nil {
+        fmt.Print("💥 ")
+        color.Red("Error writing file")
+        color.Red(err.Error())
+        os.Exit(1)
+    }
+
+    color.Blue("🆗 Version number replaced successfully.")
+    color.Green("✔  Version bumped to " + new_version)
+
 }
