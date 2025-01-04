@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.0"
+const version = "0.6.1"
 
 func main() {
 
@@ -79,8 +79,8 @@ func main() {
     case "bump":
         banner()
 
-        if len(os.Args) < 2 {
-            color.Red("❌  Missing argument for bump subcommand.")
+        if len(os.Args) < 3 {
+            color.Red("❌  Missing argument for bump subcommand. Use minor, major, or build.")
             printUsage()
             os.Exit(1)
         }
