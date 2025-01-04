@@ -28,12 +28,12 @@ A minimal, oppinionated go project bootstrapping tool.
 
 Currently gopher supports 7 actions.
 
-- Bootstraping a project `init`
-- Generating build files using `make` and `just`
-- Building and packaging a project `release`
-- Installing a project `install`
-- Creating a [Scoop.sh](https://scoop.sh) manifest `scoop`
-- Bumping the version number in your main file to the next one
+- Bootstraping a project: `init`
+- Generating build files using: `make` and `just`
+- Building and packaging a project: `release`
+- Installing a project: `install`
+- Creating a [Scoop.sh](https://scoop.sh) manifest: `scoop`
+- Bumping the version number in your main file to the next one: `bump`
 
 ### Create a new project
 
