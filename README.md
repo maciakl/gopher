@@ -20,7 +20,7 @@ Gopher will bootstrap a project with sensible defaults, and provide additional p
       install
             install the project binary in the user's private bin directory
       bump <string>
-            bump the major, minor, or build version number in the main file
+            bump the major, minor, or patch version number in the main file
       version
             display version number and exit
       help
@@ -161,15 +161,17 @@ The `bump` subcommand will search your code for a line that looks something like
 
 It will parse out the current version number, and increment and/or update the appropriate digits.
 
-The different digits are called: `MAJOR.MINOR.BUILD`.
+The different digits are called: `MAJOR.MINOR.PATCH`.
 
 You can use the following subcommands:
 
 | Command | Current Version | New Version |
 | --- | --- | --- |
-| `gopher bump build` | `A.B.C` | `A.B.C+1` |
+| `gopher bump patch` | `A.B.C` | `A.B.C+1` |
 | `gopher bump minor` | `A.B.C` | `A.B+1.0` |
 | `gopher bump major` | `A.B.C` | `A+1.0.0` |
+
+Currently `gopher bump build` will also work and increment the `patch` number.
 
 ⚠️ Note: just in case, commit your changes before using this command as your file is edited in place, so if something goes horribly wrong, you might lose work.
 
