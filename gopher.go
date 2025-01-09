@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.1"
+const version = "0.6.2"
 
 func main() {
 
@@ -80,7 +80,7 @@ func main() {
         banner()
 
         if len(os.Args) < 3 {
-            color.Red("❌  Missing argument for bump subcommand. Use minor, major, or build.")
+            color.Red("❌  Missing argument for bump subcommand. Use minor, major, or patch.")
             printUsage()
             os.Exit(1)
         }
@@ -824,9 +824,9 @@ func incString(s string) string {
 // bump the version number in the version constant of the main file
 func versionBump(what string) {
 
-    if what != "major" && what != "minor" && what != "build" {
+    if what != "major" && what != "minor" && what != "build" && what != "patch"{
         fmt.Print("💥 ")
-        color.Red("Invalid argument for bump subcommand.")
+        color.Red("Invalid argument for bump subcommand. Use major, minor, or patch.")
         printUsage()
         os.Exit(1)
     }
@@ -849,7 +849,7 @@ func versionBump(what string) {
     build := parts[2]
 
     // increment the build number
-    if what == "build" {
+    if what == "build" || what == "patch" {
         build = incString(build)
     } else if what == "minor" {
         minor = incString(minor)
