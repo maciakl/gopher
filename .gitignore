@@ -5,5 +5,6 @@ gopher_*.zip
 gopher_*.tgz
 test
 Makefile
+.env
 # Added by goreleaser init:
 dist/

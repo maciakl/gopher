@@ -45,6 +45,9 @@ changelog:
       - "^docs:"
       - "^test:"
 
+env_files:
+  github_token: .env
+
 release:
   footer: >-
 
