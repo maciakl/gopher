@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.2"
+const version = "0.6.3"
 
 func main() {
 
@@ -234,7 +234,7 @@ func createProject(uri string) {
 
 	color.Blue("🆗 git repository initiated.")
 
-	// add github as irigin
+	// add github as origin
 	color.Cyan("Running git remote add origin...")
 	cmd = exec.Command("git", "remote", "add", "origin", gh_origin)
 	cmd.Stdout = os.Stdout
@@ -249,6 +249,21 @@ func createProject(uri string) {
 
 	color.Blue("🆗 new origin repository added.")
 	color.White("💬  You can run git push -u origin main to push your project to github.")
+
+	// run goreleaser init
+	color.Cyan("Running goreleaser init...")
+	cmd = exec.Command("goreleaser", "init")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	e = cmd.Run()
+	if e != nil {
+		fmt.Print("💥 ")
+		color.Red(e.Error())
+		errors++
+	}
+	color.Blue("🆗 goreleaser configuration created.")
+	color.White("💬  You can edit the .goreleaser.yml file to customize the release process.")
+
 
 	// print the success message
 	if errors == 0 {

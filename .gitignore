@@ -5,3 +5,5 @@ gopher_*.zip
 gopher_*.tgz
 test
 Makefile
+# Added by goreleaser init:
+dist/
