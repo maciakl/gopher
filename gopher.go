@@ -192,6 +192,8 @@ func createProject(uri string) {
 		color.Red("Error creating .gitignore", err)
 		os.Exit(1)
 	}
+
+	gfile.WriteString(".env\n")
 	gfile.WriteString(name + "\n")
 	gfile.WriteString(name + "*.exe\n")
 	gfile.WriteString(name + ".zip\n")
@@ -477,7 +479,7 @@ func generateScoopFile() {
     color.Blue("🆗 Homepage url: " + homepage)
 
 	color.Cyan("Creating the download url...")
-	url = "https://github.com/" + username + "/" + name + "/releases/download/v" + version + "/" + name + "_win.zip"
+	url = "https://github.com/" + username + "/" + name + "/releases/download/v" + version + "/" + name + "_" + version + "_Windows_x86_64.zip"
 
     color.Blue("🆗 Download url: " + url)
 

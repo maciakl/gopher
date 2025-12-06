@@ -43,7 +43,7 @@ To create a new go project run:
 
     gopher init <string>
 
-The `<string>` can be a project name or a git repository uri (without https:// part).
+The `<string>` can be a project name or a git repository uri (you can leave out https://github.com/ part if it's a github repository).
 
 If you provide a valid uri, gopher will extract following information from it: 
 
@@ -70,7 +70,7 @@ Once it knows all the relevant information it will do the following:
  
 So, for example, if you run:
 
-    gopher init github.com/maciakl/test
+    gopher init maciakl/test
 
 Gopher will generate the following folder structure:
 
@@ -83,10 +83,12 @@ Gopher will generate the following folder structure:
      +--- README.md
      |
      +--- test.go
+     |
+     +--- .goreleser.yml
 
 ### Generating Build Files
 
-You can use the `gopher` tool to creathe simple build files for your project. To create a simple `Makefile` run:
+You can use the `gopher` tool to create simple build files for your project. To create a simple `Makefile` run:
 
     gopher make
 
@@ -106,10 +108,21 @@ To build the project and create a set of zip files for different distribution pl
 
 This must be run in the project directory. It will:
 
+- add a git tag for the current version of your project (extracted from the version const in your main file)
 - cross compile the project for windows, mac and linux
-- generate zip files for each os named `name_win.zip`, `name_mac.zip` and `name_lin.zip` respectively
+- generate zip files for each os named tagged with the version number and platform
+- run `goreleaser release --clean` to create a github release with the generated zip files attached
 
-Note that this is the same functionality as the legacy `gopher wrap` command.
+You can control the behavior of the release process by editing the `.goreleser.yml` file created by `gopher init` command. See [goreleaser documentation](https://goreleaser.com/) for more details.
+
+⚠️ Note: you must set up a github token and make it available for goreleaser. The reccomended way for this is to add the following lines to `.goreleaser.yml` file:
+
+```yaml
+env_files:
+  github_token: .env
+```
+Then create a `.env` file in the project directory with your Github token. Alternatively you can set the `GITHUB_TOKEN` environment variable.
+
 
 ### Generate a Scoop Manifest
 
@@ -135,7 +148,7 @@ This will yield the following `test.json` file in the project directory:
         "description": "A new scoop package",
         "homepage": "https://github.com/maciakl/test",
         "checkver": "github",
-        "url": "https://github.com/maciakl/test/releases/download/v0.1.0/test_win.zip",
+        "url": "https://github.com/maciakl/test/releases/download/v0.1.0/test_0.1.0_Winods_x86_64.zip",
         "bin": "test.exe",
         "license": "freeware"
     }
