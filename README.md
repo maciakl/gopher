@@ -120,9 +120,11 @@ This must be run in the project directory. It will:
 
 You can control the behavior of the release process by editing the `.goreleser.yml` file created by `gopher init` command. See [goreleaser documentation](https://goreleaser.com/) for more details.
 
-⚠️ Note: you must set up a github token and make it available for goreleaser. Create your own github token [here](https://github.com/settings/tokens/new?scopes=repo,write:packages).
+⚠️ Note: you must set up a github token and make it available for `goreleaser`. 
 
-The recommended way to expose this to goreleaser to add the following lines to `.goreleaser.yml` file:
+Create your own github token [here](https://github.com/settings/tokens/new?scopes=repo,write:packages).
+
+The recommended way to expose this to `goreleaser` to add the following lines to `.goreleaser.yml` file:
 
 ```yaml
 env_files:
@@ -130,7 +132,7 @@ env_files:
 ```
 Then create a `.env` file in the project directory with your Github token. Gopher automatically puts that file into your project's `.gitignore` for you so you don't accidentally commit it with your code. 
 
-Alternatively you can set the `GITHUB_TOKEN` environment variable on your system.
+Alternatively, if you give the token permission to all your repos, you can set the `GITHUB_TOKEN` environment variable on your system and have it available for all your projects.
 
 
 ### Generate a Scoop Manifest

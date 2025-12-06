@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.7"
+const version = "0.6.8"
 
 func main() {
 
@@ -394,7 +394,6 @@ func go_release() {
 
 	// add a tag for the current version
 	color.Cyan("Tagging the current version v" + version + "...")
-	color.White("💬  If this process fails run git tag v" + version + " to remove the tag before re-running this command.")
 	cmd := exec.Command("git", "tag", "v"+version)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -417,7 +416,19 @@ func go_release() {
 	if e != nil {
 		fmt.Print("💥 ")
 		color.Red(e.Error())
-		os.Exit(1)
+
+		// delete the tag we just created
+		color.Cyan("Deleting the git tag v" + version + "...")
+		cmd = exec.Command("git", "tag", "-d", "v"+version)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		e = cmd.Run()
+		if e != nil {
+			fmt.Print("💥 ")
+			color.Red(e.Error())
+			color.Yellow("⚠  Failed to remove tag, run git tag v" + version + " manually before re-running this command")
+			os.Exit(1)
+		}
 	}
 	color.Blue("🆗 goreleaser ran successfully.")
 	color.Green("✔  Project released successfully. Check your github page for the new release")
