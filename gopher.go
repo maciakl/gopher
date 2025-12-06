@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.5"
+const version = "0.6.6"
 
 func main() {
 
@@ -120,8 +120,36 @@ func printUsage() {
 	fmt.Println("        display this help message and exit")
 }
 
+func check() {
+	// check if go is installed
+	_, err := exec.LookPath("go")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Go is not installed. Please install Go and try again.")
+		os.Exit(1)
+	}
+
+	// check if git is installed
+	_, err = exec.LookPath("git")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Git is not installed. Please install Git and try again.")
+		os.Exit(1)
+	}
+
+	// check if goreleaser is installed
+	_, err = exec.LookPath("goreleaser")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Goreleaser is not installed. Please install Goreleaser and try again.")
+		os.Exit(1)
+	}
+}
+
 // This function creates a new project with a given name.
 func createProject(uri string) {
+
+	check()
 
 	errors := 0
 	var name, username string
@@ -278,6 +306,8 @@ func createProject(uri string) {
 // release the project using goreleaser
 func go_release() {
 
+	check()
+
 	color.Cyan("Releasing the project ...")
 	color.Cyan("This will build the project for multiple platforms and create a new github release.")
 	color.White("💬  Make sure you edit the .goreleaser.yml file to set up how the project should get released.")
@@ -287,6 +317,7 @@ func go_release() {
 
 	// add a tag for the current version
 	color.Cyan("Tagging the current version v" + version + "...")
+	color.White("💬  If this process fails run git tag v" + version + " to remove the tag before re-running this command.")
 	cmd := exec.Command("git", "tag", "v"+version)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -296,6 +327,7 @@ func go_release() {
 		color.Red(e.Error())
 		os.Exit(1)
 	}
+	color.Blue("🆗 Git tag added successfully.")
 
 	// run goreleaser release command
 	color.Cyan("Running goreleaser release...")
@@ -310,12 +342,14 @@ func go_release() {
 		color.Red(e.Error())
 		os.Exit(1)
 	}
-
-	color.Green("✔  Project released successfully using goreleaser.")
+	color.Blue("🆗 goreleaser ran successfully.")
+	color.Green("✔  Project released successfully. Check your github page for the new release")
 }
 
-// Deorecated: use go_release() instead
+// Deprecated: use go_release() instead
 func release() {
+
+	color.Yellow("⚠  This release function is deprecated and will be removed after 0.7.0.")
 	color.Cyan("Building the project using gopher defaults...")
 	color.Cyan("This will create 3 zip files with the executables for windows, mac and linux.")
 	buildProject()
@@ -323,8 +357,10 @@ func release() {
 
 // This is gopher's internal function to build the project and zip it
 // by default it builds for windows, mac and linux and generates zip files
+// Deprecated: use go_release() instead
 func buildProject() {
 
+	color.Yellow("⚠  This build function is deprecated and will be removed after 0.7.0.")
 	errors := 0
 
 	// get the module name from go.mod file
@@ -380,6 +416,8 @@ func buildProject() {
 // build and zip the project, return the number of errors encountered
 // Deprecated: use go_release() instead
 func buildAndZip(current_os string, name string) int {
+
+	color.Yellow("⚠  This build function is deprecated and will be removed after 0.7.0.")
 
 	errors := 0
 

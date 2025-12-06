@@ -22,6 +22,10 @@ builds:
       - linux
       - windows
       - darwin
+      - freebsd
+      - netbsd
+      - openbsd
+      - solaris
 
 archives:
   - formats: [tar.gz]
@@ -44,9 +48,6 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
-
-env_files:
-  github_token: .env
 
 release:
   footer: >-
