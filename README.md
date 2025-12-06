@@ -8,21 +8,26 @@ Gopher will bootstrap a project with sensible defaults, and provide additional p
 
     Subcommands:
       init <string>
-            bootstrap a new project with a given <string> name or url
+            bootstrap a new project with a given <string> in the format
+            username/project or github.com/username/project
+      make
+            print project information known to gopher
       make
             create a simple Makefile for the project
       just
             create a simple Justfile for the project  
       release
-            build the project for windows, linux and mac, then and zip the binaries
+            build the project using goreleaser
       scoop
-            generate a Scoop.sh manifest file for the project
+            generate a Scoop manifest file for the project
       install
             install the project binary in the user's private bin directory
+            typically ~/bin or %USERPROFILE%\bin
       bump <string>
-            bump the major, minor, or patch version number in the main file
+            bump the project version number in the main file; the <string> can
+            be one of: major, minor, build | patch
       version
-            display version number and exit
+            display version number of this tool and exit
       help
             display this help message and exit
 

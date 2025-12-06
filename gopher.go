@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.6"
+const version = "0.6.7"
 
 func main() {
 
@@ -66,6 +66,10 @@ func main() {
 		banner()
 		go_release()
 
+	case "info":
+		banner()
+		info()
+
 	// generate a scoop manifest file
 	case "scoop":
 		banner()
@@ -100,22 +104,37 @@ func printUsage() {
 
 	fmt.Println("\nUsage: gopher [subcommand] <arguments>")
 	fmt.Println("\nSubcommands:")
+	fmt.Println("")
 	fmt.Println("  init <string>")
-	fmt.Println("        bootstrap a new project with a given <string> name or url")
+	fmt.Println("        bootstrap a new project with where the <string> is the project name")
+	fmt.Println("        in the format username/projectname or a full github uri like github.com/username/projectname")
+	fmt.Println("")
+	fmt.Println("  info")
+	fmt.Println("        print project information known to gopher")
+	fmt.Println("")
 	fmt.Println("  make")
 	fmt.Println("        create a simple Makefile for the project")
+	fmt.Println("")
 	fmt.Println("  just")
 	fmt.Println("        create a simple Justfile for the project")
+	fmt.Println("")
 	fmt.Println("  release")
-	fmt.Println("        build the project for windows, linux and mac, then and zip the binaries")
+	fmt.Println("        build and release the project using goreleaser")
+	fmt.Println("")
 	fmt.Println("  scoop")
-	fmt.Println("        generate a Scoop.sh manifest file for the project")
+	fmt.Println("        generate a Scoop manifest file for the project")
+	fmt.Println("")
 	fmt.Println("  install")
 	fmt.Println("        install the project binary in the user's private bin directory")
+	fmt.Println("        typically ~/bin")
+	fmt.Println("")
     fmt.Println("  bump <string>")
-    fmt.Println("        bump the major, minor, or build version number in the main file")
+    fmt.Println("        bump the version number in the main file")
+    fmt.Println("        the <string> can be major, minor, or build / patch")
+	fmt.Println("")
 	fmt.Println("  version")
-	fmt.Println("        display version number and exit")
+	fmt.Println("        display version number of the gopher tool and exit")
+	fmt.Println("")
 	fmt.Println("  help")
 	fmt.Println("        display this help message and exit")
 }
@@ -301,6 +320,64 @@ func createProject(uri string) {
 	} else {
 		color.Green("⚠  Project " + name + " created with some errors.")
 	}
+}
+
+// dislpay info about the project
+func info() {
+
+	name := getModuleName()
+	version := getVersion(name + ".go")
+	uri := getModule()
+	username := getUsername(uri)
+	gh_origin := getGitOrigin()
+	git_tag := getGitTag()
+	git_tag_commit := getGitCommit(git_tag)
+	git_head := getGitCommit("HEAD")
+
+	fmt.Println()
+	color.White("📝 Project information:")
+	color.White("  Project Name:\t" + name)
+	color.White("  Version:\t" + version)
+	color.White("  Git tag: \t" + git_tag + " (" + git_tag_commit + ")")
+	color.White("  Git HEAD: \t" + git_head)
+	color.White("  Github user: \t" + username)
+	color.White("  Github URI: \t" + uri)
+	color.White("  Github repo: \t" + gh_origin)
+	fmt.Println()
+
+}
+
+// get github origin from git
+func getGitOrigin() string {
+	cmd := exec.Command("git", "config", "--get", "remote.origin.url")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error getting git origin")
+		color.Red(err.Error())
+		os.Exit(1)
+	}
+	return strings.TrimSpace(string(output))
+}
+
+// get latest git tag from git 
+func getGitTag() string {
+	cmd := exec.Command("git", "describe", "--tags", "--abbrev=0")
+	output, err := cmd.Output()
+	if err != nil {
+		return "unknown"
+	}
+	return strings.TrimSpace(string(output))
+}
+
+// get short commit id from git given a tag
+func getGitCommit(tag string) string {
+	cmd := exec.Command("git", "rev-parse", "--short", tag)
+	output, err := cmd.Output()
+	if err != nil {
+		return "unknown"
+	}
+	return strings.TrimSpace(string(output))
 }
 
 // release the project using goreleaser
