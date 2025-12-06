@@ -314,6 +314,7 @@ func go_release() {
 	color.Green("✔  Project released successfully using goreleaser.")
 }
 
+// Deorecated: use go_release() instead
 func release() {
 	color.Cyan("Building the project using gopher defaults...")
 	color.Cyan("This will create 3 zip files with the executables for windows, mac and linux.")
@@ -377,6 +378,7 @@ func buildProject() {
 }
 
 // build and zip the project, return the number of errors encountered
+// Deprecated: use go_release() instead
 func buildAndZip(current_os string, name string) int {
 
 	errors := 0
