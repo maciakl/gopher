@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.3"
+const version = "0.6.4"
 
 func main() {
 
@@ -64,7 +64,7 @@ func main() {
 	// build the project and zip it
 	case "release", "wrap":
 		banner()
-		release()
+		go_release()
 
 	// generate a scoop manifest file
 	case "scoop":
@@ -271,6 +271,45 @@ func createProject(uri string) {
 	} else {
 		color.Green("⚠  Project " + name + " created with some errors.")
 	}
+}
+
+// release the project using goreleaser
+func go_release() {
+
+	color.Cyan("Releasing the project ...")
+	color.Cyan("This will build the project for multiple platforms and create a new github release.")
+	color.White("💬  Make sure you edit the .goreleaser.yml file to set up how the project should get released.")
+
+	name := getModuleName()
+	version := getVersion(name + ".go")
+
+	// add a tag for the current version
+	color.Cyan("Tagging the current version v" + version + "...")
+	cmd := exec.Command("git", "tag", "v"+version)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	e := cmd.Run()
+	if e != nil {
+		fmt.Print("💥 ")
+		color.Red(e.Error())
+		os.Exit(1)
+	}
+
+	// run goreleaser release command
+	color.Cyan("Running goreleaser release...")
+
+	cmd = exec.Command("goreleaser", "release", "--clean")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	e = cmd.Run()
+
+	if e != nil {
+		fmt.Print("💥 ")
+		color.Red(e.Error())
+		os.Exit(1)
+	}
+
+	color.Green("✔  Project released successfully using goreleaser.")
 }
 
 func release() {
