@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.4"
+const version = "0.6.5"
 
 func main() {
 
