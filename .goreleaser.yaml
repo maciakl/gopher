@@ -49,6 +49,11 @@ changelog:
       - "^docs:"
       - "^test:"
 
+announce:
+  bluesky:
+    enabled: true
+    username: "lukemaciak.bsky.social"
+
 release:
   footer: >-
 
