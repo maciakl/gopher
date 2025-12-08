@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.8"
+const version = "0.6.9"
 
 func main() {
 
@@ -313,6 +313,33 @@ func createProject(uri string) {
 	color.Blue("🆗 goreleaser configuration created.")
 	color.White("💬  You can edit the .goreleaser.yml file to customize the release process.")
 
+	yml_err := 0
+
+	// modify the goreleaser.yaml and replace {{ .ProjectName }}_ with {{ .ProjectName }}_{{ .Version }}_
+	color.Cyan("Modifying the .goreleaser.yaml file to include version in the archive names...")
+	file, err := os.ReadFile(".goreleaser.yaml")
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error reading .goreleaser.yaml file")
+		color.Red(err.Error())
+		errors++
+		yml_err++
+	}
+	find := "{{ .ProjectName }}_"
+	replace := "{{ .ProjectName }}_{{ .Version }}_"
+	file = bytes.Replace(file, []byte(find), []byte(replace), -1)
+	err = os.WriteFile(".goreleaser.yaml", file, 0644)
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error writing .goreleaser.yaml file")
+		color.Red(err.Error())
+		errors++
+		yml_err++
+	}
+	
+	if yml_err == 0 {
+		color.Blue("🆗 .goreleaser.yaml file modified successfully.")
+	}
 
 	// print the success message
 	if errors == 0 {
@@ -430,6 +457,10 @@ func go_release() {
 			os.Exit(1)
 		}
 	}
+
+	// generate scoop manifest file
+	generateScoopFile()
+
 	color.Blue("🆗 goreleaser ran successfully.")
 	color.Green("✔  Project released successfully. Check your github page for the new release")
 }

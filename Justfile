@@ -4,16 +4,18 @@ BINARY_NAME := "gopher"
 [macos]
 [unix]
 clean:
-    go clean:w
+    go clean
 
-    rm {{BINARY_NAME}}_*.tar.gz
+    rm {{BINARY_NAME}}_*.zip
     rm -rf test 
+    rm -rf dist 
 
 [windows]
 clean:
 	go clean
 	rm {{BINARY_NAME}}_*.zip
 	rm test -Force -Recurse -Confirm:$false
+	rm dist -Force -Recurse -Confirm:$false
 
 
 
