@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.10"
+const version = "0.7.0"
 
 func main() {
 
@@ -62,9 +62,9 @@ func main() {
 		createJustfile()
 
 	// build the project and zip it
-	case "release", "wrap":
+	case "release":
 		banner()
-		go_release()
+		release()
 
 	case "info":
 		banner()
@@ -436,7 +436,7 @@ func getGitCommit(tag string) string {
 }
 
 // release the project using goreleaser
-func go_release() {
+func release() {
 
 	check()
 
