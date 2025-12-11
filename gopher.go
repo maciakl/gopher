@@ -165,6 +165,25 @@ func check() {
 	}
 }
 
+// find a text line inside a file that matches the pattern
+func findInFile(filename string, pattern string) (string, error) {
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, pattern) {
+			return line, nil
+		}
+	}
+	return "", nil
+}
+
 // perform an in-place find and replace in a text file
 func replaceInFile(filename string, find string, replace string) error {
 
@@ -685,80 +704,55 @@ func generateScoopFile() {
 
 // searches the file name.go for a constant named version and returns its value
 func getVersion(filename string) string {
-	// open the file
-	file, err := os.Open(filename)
+
+	line, err := findInFile(filename, "const version")
+
 	if err != nil {
 		fmt.Print("💥 ")
-		color.Red("Error opening file")
+		color.Red("Error opening file " + filename)
 		color.Red(err.Error())
 		os.Exit(1)
 	}
-	defer file.Close()
 
-	// create a scanner
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "const version") {
-			quoted_version := strings.Split(line, "=")[1]
-			return strings.Trim(quoted_version, " \"")
-		}
-	}
-	return ""
+	quoted_version := strings.Split(line, "=")[1]
+	return strings.Trim(quoted_version, " \"")
 }
 
 // searches go.mod file for the module name and returns it as string
 func getModuleName() string {
-	// open the file
-	file, err := os.Open("go.mod")
+
+	line, err := findInFile("go.mod", "module")
+
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Error opening go.mod file")
 		color.Red(err.Error())
 		os.Exit(1)
 	}
-	defer file.Close()
 
-	// create a scanner
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "module") {
+	url := strings.Split(line, " ")[1]
 
-			url := strings.Split(line, " ")[1]
-
-			// if url contains / then it's a github url an we need to extract the last part
-			if strings.Contains(url, "/") {
-				return getName(url)
-			} else {
-				return url
-			}
-		}
+	// if the url contains / then it's a github url an we need to extract the last part
+	if strings.Contains(url, "/") {
+		return getName(url)
+	} else {
+		return url
 	}
-	return ""
 }
 
 // search the go.mod file for the module string and return it
 func getModule() string {
-	// open the file
-	file, err := os.Open("go.mod")
+
+	line, err := findInFile("go.mod", "module")
+
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Error opening go.mod file")
 		color.Red(err.Error())
 		os.Exit(1)
 	}
-	defer file.Close()
 
-	// create a scanner
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "module") {
-			return strings.Split(line, " ")[1]
-		}
-	}
-	return ""
+	return strings.Split(line, " ")[1]
 }
 
 // function that takes in a github uri and returns the last part of it
