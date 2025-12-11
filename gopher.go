@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.6.9"
+const version = "0.6.10"
 
 func main() {
 
@@ -163,6 +163,22 @@ func check() {
 		color.Red("Goreleaser is not installed. Please install Goreleaser and try again.")
 		os.Exit(1)
 	}
+}
+
+// returns error
+func replaceInFile(filename string, find string, replace string) error {
+
+	file, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	file = bytes.Replace(file, []byte(find), []byte(replace), -1)
+	err = os.WriteFile(filename, file, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // This function creates a new project with a given name.
@@ -315,23 +331,16 @@ func createProject(uri string) {
 
 	yml_err := 0
 
+
 	// modify the goreleaser.yaml and replace {{ .ProjectName }}_ with {{ .ProjectName }}_{{ .Version }}_
+
 	color.Cyan("Modifying the .goreleaser.yaml file to include version in the archive names...")
-	file, err := os.ReadFile(".goreleaser.yaml")
+
+	err = replaceInFile(".goreleaser.yaml", "{{ .ProjectName }}_", "{{ .ProjectName }}_{{ .Version }}_")
+
 	if err != nil {
 		fmt.Print("💥 ")
-		color.Red("Error reading .goreleaser.yaml file")
-		color.Red(err.Error())
-		errors++
-		yml_err++
-	}
-	find := "{{ .ProjectName }}_"
-	replace := "{{ .ProjectName }}_{{ .Version }}_"
-	file = bytes.Replace(file, []byte(find), []byte(replace), -1)
-	err = os.WriteFile(".goreleaser.yaml", file, 0644)
-	if err != nil {
-		fmt.Print("💥 ")
-		color.Red("Error writing .goreleaser.yaml file")
+		color.Red("Error modifying .goreleaser.yaml file")
 		color.Red(err.Error())
 		errors++
 		yml_err++
@@ -1080,27 +1089,16 @@ func versionBump(what string) {
 
     color.Blue("🆗 New version is " + new_version)
 
-    // read the file into memory
-    file, err := os.ReadFile(name + ".go")
-    if err != nil {
-        fmt.Print("💥 ")
-        color.Red("Error reading file")
-        color.Red(err.Error())
-        os.Exit(1)
-    }
-
     color.Cyan("Replacing the version number in " + name + ".go file...")
 
     find := "const version = \"" + version + "\""
     replace := "const version = \"" + new_version + "\""
 
-    file = bytes.Replace(file, []byte(find), []byte(replace), -1)
+	err := replaceInFile(name+".go", find, replace)
 
-    // write the file back to disk
-    err = os.WriteFile(name+".go", file, 0644)
     if err != nil {
         fmt.Print("💥 ")
-        color.Red("Error writing file")
+        color.Red("Error modifying the source file")
         color.Red(err.Error())
         os.Exit(1)
     }
