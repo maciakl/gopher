@@ -165,7 +165,7 @@ func check() {
 	}
 }
 
-// returns error
+// perform an in-place find and replace in a text file
 func replaceInFile(filename string, find string, replace string) error {
 
 	file, err := os.ReadFile(filename)
