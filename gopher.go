@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.1"
+const version = "0.7.2"
 
 func main() {
 
@@ -486,9 +486,6 @@ func release() {
 		}
 	}
 
-	// generate scoop manifest file
-	generateScoopFile()
-
 	color.Blue("🆗 goreleaser ran successfully.")
 	color.Green("✔  Project released successfully. Check your github page for the new release")
 }
@@ -498,7 +495,16 @@ func release() {
 func generateScoopFile() {
 
 	color.Cyan("Generating scoop manifest file...")
-	// declare multiple string variables
+
+	// check if the dist/ folder exists in the project directory and if not exit
+	if _, err := os.Stat("dist"); os.IsNotExist(err) {
+		// warn
+		color.Yellow("⚠  dist/ folder does not exist in the project directory.")
+		color.White("💬  Make sure you have built the project using gopher release")
+		os.Exit(1)
+	}
+
+	
 	var name, username, version, description, homepage, url string
 
 	color.Cyan("Getting module string from go.mod file...")
@@ -559,11 +565,13 @@ func generateScoopFile() {
 
     color.Blue("🆗 Manifest created successfully.")
 
+	scoopfile_path := "dist" + string(os.PathSeparator) + name + ".json"
+
 	// write the manifest to the file
-	color.Cyan("Creating " + name + ".json file")
-	mfile, err := os.Create(name + ".json")
+	color.Cyan("Creating " + scoopfile_path)
+	mfile, err := os.Create(scoopfile_path)
 	if err != nil {
-		color.Red("Error creating " + name + ".json file")
+		color.Red("Error creating " + scoopfile_path)
 		color.Red(err.Error())
 		os.Exit(1)
 	}
@@ -607,7 +615,7 @@ func generateScoopFile() {
 		new_line := fmt.Sprintf(`    "url": "%s",
 	"hash": "%s",`, url, hash)
 
-		err = replaceInFile(name+".json", bin_line, new_line)
+		err = replaceInFile(scoopfile_path, bin_line, new_line)
 		if err != nil {
 			// print a warning
 			color.Yellow("⚠  Could not add the hash to the manifest file.")
