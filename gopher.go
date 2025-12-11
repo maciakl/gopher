@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.0"
+const version = "0.7.1"
 
 func main() {
 
@@ -569,10 +569,61 @@ func generateScoopFile() {
 	}
 	defer mfile.Close()
 
-    color.Blue("🆗 file created successfully.")
+    color.Blue("🆗 file created.")
 
 	mfile.WriteString(manifest)
-	color.Green("✔  Scoop manifest file " + name + ".json created successfully.")
+    color.Blue("🆗 scoop file has been written to disk.")
+
+	errors := 0
+
+	color.Cyan("Checking for for existing windows binary release in dist/ folder...")
+
+	// use correct path operator
+	checksum_file := "dist" + string(os.PathSeparator) + name + "_" + version + "_checksums.txt"
+	zip_file :=  name + "_" + version + "_Windows_x86_64.zip"
+	hash := ""
+
+	line, err := findInFile(checksum_file, name+"_"+version+"_Windows_x86_64.zip")
+
+	if err != nil {
+		color.Yellow("⚠  Could not find the checksum file: " + checksum_file)
+		color.White("💬  Make sure you have built the windows binary using gopher release command.")
+		errors++
+	} else {
+		if line == "" {
+			color.Yellow("⚠  Could not find a checksum for " + zip_file + " in the checksum file.")
+			color.White("💬  Make sure you have built the windows binary using gopher release command.")
+			errors++
+		} else {
+			hash = strings.Split(line, " ")[0]
+			color.Blue("🆗 Found a checksum for " + zip_file +" -> " + hash)
+		}
+	}
+
+	if hash != "" {
+		color.Cyan("Adding the sha256 checksum to the manifest file...")
+
+		bin_line := fmt.Sprintf(`    "url": "%s",`, url)
+		new_line := fmt.Sprintf(`    "url": "%s",
+	"hash": "%s",`, url, hash)
+
+		err = replaceInFile(name+".json", bin_line, new_line)
+		if err != nil {
+			// print a warning
+			color.Yellow("⚠  Could not add the hash to the manifest file.")
+			color.White("💬  You can add it manually later.")
+			errors++
+		} else {
+			color.Blue("🆗 Manifest file updated successfully.")
+		}
+
+	}
+
+	if errors == 0 {
+		color.Green("✔  Scoop manifest file " + name + ".json created successfully.")
+	} else {
+		color.Green("⚠  Scoop manifest file " + name + ".json created with some warnings.")
+	}
 
 }
 
