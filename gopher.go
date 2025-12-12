@@ -213,6 +213,9 @@ func createProject(uri string) {
 		color.Cyan("Detected a github uri, extracting the name...")
 		name = getName(uri)
 		username = getUsername(uri)
+		if !strings.Contains(uri, "github.com") {
+			uri = "github.com/" + uri
+		}
 	} else {
 		color.Yellow("⚠  project name is not a github URI")
 		color.Cyan("Checking if GOPHER_USERNAME environment variable is set...")
