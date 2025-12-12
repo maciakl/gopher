@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.2"
+const version = "0.7.3"
 
 func main() {
 
@@ -388,6 +388,15 @@ func info() {
 	git_tag := getGitTag()
 	git_tag_commit := getGitCommit(git_tag)
 	git_head := getGitCommit("HEAD")
+	git_state := "✔️ clean"
+
+	// run git diff --quiet and check the exit code to see if repo is clean or dirty
+	cmd := exec.Command("git", "diff", "--quiet")
+	e := cmd.Run()
+	if e != nil {
+		git_state = "❌ dirty"
+	}
+
 
 	fmt.Println()
 	color.White("📝 Project information:")
@@ -395,19 +404,20 @@ func info() {
 	color.White("  Version:\t" + version)
 	color.White("  Git tag: \t" + git_tag + " (" + git_tag_commit + ")")
 	color.White("  Git HEAD: \t" + git_head)
+	color.White("  Git State: \t" + git_state)
 	color.White("  Github user: \t" + username)
 	color.White("  Github URI: \t" + uri)
+	color.White("  Github repo: \t" + gh_origin)
 	color.White("  Github repo: \t" + gh_origin)
 	fmt.Println()
 
 
 	color.White("📃 Recent git commits:")
 
-	// run git log --oneline --graph --decorate -10
-	cmd := exec.Command("git", "log", "--oneline", "--graph", "--decorate", "-10")
+	cmd = exec.Command("git", "log", "--oneline", "--graph", "--decorate", "-10")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	e := cmd.Run()
+	e = cmd.Run()
 	if e != nil {
 		// print warning	
 		color.Yellow("⚠  Failed to fetch git log")
