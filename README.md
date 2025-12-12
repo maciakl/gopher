@@ -70,6 +70,7 @@ Once it knows all the relevant information it will do the following:
   - create `.gitignore` file
   - create `README.md` file
   - create `name.go` with simple hello world code
+  - create `name_test.go` with simple test code
   - run `git init -b main`
   - run `git remote add origin repo_address`
  
@@ -89,7 +90,9 @@ Gopher will generate the following folder structure:
      |
      +--- test.go
      |
-     +--- .goreleser.yml
+     +--- test_test.go
+     |
+     +--- .goreleaser.yml
 
 ### Generating Build Files
 
