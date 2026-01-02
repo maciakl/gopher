@@ -69,8 +69,10 @@ Once it knows all the relevant information it will do the following:
   - run `go mod init uri`
   - create `.gitignore` file
   - create `README.md` file
-  - create `name.go` with simple hello world code
-  - create `name_test.go` with simple test code
+  - create `project_name.go` with simple hello world code
+  - create `project_name_test.go` with simple test code
+  - run `goreleaser init`
+  - update `.goreleaser.yml` with oppinionated gopher defaults
   - run `git init -b main`
   - run `git remote add origin repo_address`
  
@@ -117,9 +119,7 @@ To build the project and create a set of zip files for different distribution pl
 This must be run in the project directory. It will:
 
 - add a git tag for the current version of your project (extracted from the version const in your main file)
-- cross compile the project for windows, mac and linux
-- generate zip files for each os named tagged with the version number and platform
-- create a new git tag for the current version (obtained from the version const in your main file)
+- cross compile the project for windows, mac, linux, freebsd, netbsd and solaris (or whichever platforms you specify in `.goreleaser.yml`)
 - run `goreleaser release --clean` to create a github release according to the settings in `.goreleser.yml` file
 
 You can control the behavior of the release process by editing the `.goreleser.yml` file created by `gopher init` command. See [goreleaser documentation](https://goreleaser.com/) for more details.
