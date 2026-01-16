@@ -577,7 +577,8 @@ func generateScoopFile() {
     color.Blue("🆗 Got your github username: " + username)
 
 	color.Cyan("Getting version from gopher.go file...")
-	version = getVersion(name + ".go")
+	mainfile := getMainFileName()
+	version = getVersion(mainfile + ".go")
 
     color.Blue("🆗 Got the project version: " + version)
 
