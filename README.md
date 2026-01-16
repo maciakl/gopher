@@ -69,8 +69,8 @@ Once it knows all the relevant information it will do the following:
   - run `go mod init uri`
   - create `.gitignore` file
   - create `README.md` file
-  - create `project_name.go` with simple hello world code
-  - create `project_name_test.go` with simple test code
+  - create `main.go` with simple hello world code
+  - create `main_test.go` with simple test code
   - run `goreleaser init`
   - update `.goreleaser.yml` with oppinionated gopher defaults
   - run `git init -b main`
@@ -90,9 +90,9 @@ Gopher will generate the following folder structure:
      |
      +--- README.md
      |
-     +--- test.go
+     +--- main.go
      |
-     +--- test_test.go
+     +--- main_test.go
      |
      +--- .goreleaser.yml
 
@@ -186,7 +186,7 @@ If such directory does not exist, gopher will bail out with an error.
 
 ### Bumping
 
-The `bump` subcommand will search your code for a line that looks something like this:
+The `bump` subcommand will search the code within `main.go` (or `projectname.go`) for a line that looks something like this:
 
     const version = "1.2.3"
 
