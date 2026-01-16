@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.3"
+const version = "0.7.4"
 
 func main() {
 
@@ -383,10 +383,25 @@ func createProject(uri string) {
 	}
 }
 
+// get the main file name
+func getMainFileName() string {
+	name := "main"
+	// check if main.go exists, if not, get the module name and check if that file exists
+	if _, err := os.Stat("main.go"); os.IsNotExist(err) {
+		name = getModuleName()
+		if _, err := os.Stat(name + ".go"); os.IsNotExist(err) {
+			fmt.Print("💥 ")
+			color.Red("Could not find main.go or " + name + ".go file in the current directory")
+			os.Exit(1)
+		}
+	}
+	return name
+}
+
 // dislpay info about the project
 func info() {
 
-	name := getModuleName()
+	name := getMainFileName()
 	version := getVersion(name + ".go")
 	uri := getModule()
 	username := getUsername(uri)
@@ -474,7 +489,7 @@ func release() {
 	color.Cyan("This will build the project for multiple platforms and create a new github release.")
 	color.White("💬  Make sure you edit the .goreleaser.yml file to set up how the project should get released.")
 
-	name := getModuleName()
+	name := getMainFileName()
 	version := getVersion(name + ".go")
 
 	// add a tag for the current version
@@ -858,7 +873,7 @@ build: tidy
 .PHONY: clean
 clean:
 	go clean
-	rm $(BINARY_NAME)_*.zip
+	rm -rf dist
     
 
 .PHONY: run
@@ -906,8 +921,8 @@ build: tidy
 	go build
 
 clean:
-	go clean
-	rm {{BINARY_NAME}}_*.zip
+	fo clean
+	rm -rf dist
     
 
 run: build
@@ -940,7 +955,7 @@ test: build
 func createMainFile() {
 
 	color.Cyan("Getting module name from go.mod file contents...")
-	name := getModuleName()
+	name := "main"
 
 	color.Cyan("Generating the " + name + ".go file...")
 	content := `package main    
@@ -999,7 +1014,7 @@ func Usage() {
 func createTestFile() {
 
 	color.Cyan("Getting module name from go.mod file contents...")
-	name := getModuleName()
+	name := getMainFileName()
 	filename := name + "_test.go"
 
 	color.Cyan("Generating the " + filename + " file...")
@@ -1127,9 +1142,20 @@ func versionBump(what string) {
         os.Exit(1)
     }
 
-    // get the module name from go.mod file
-    color.Cyan("Getting module name from go.mod file...")
-    name := getModuleName()
+    color.Cyan("Determining the name of the main file...")
+	name := getMainFileName()
+	
+	// check if main.go exists, if not, get the module name and check if that file exists
+	if _, err := os.Stat("main.go"); os.IsNotExist(err) {
+		color.Cyan("The file main.go does not exist. Getting module name from go.mod file...")
+		name = getModuleName()
+
+		if _, err := os.Stat(name + ".go"); os.IsNotExist(err) {
+			fmt.Print("💥 ")
+			color.Red("Could not find main.go or " + name + ".go file in the current directory.")
+			os.Exit(1)
+		}
+	}
 
     // get the current version
     color.Cyan("Getting current version from " + name + ".go file...")

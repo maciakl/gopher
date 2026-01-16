@@ -40,8 +40,8 @@ func TestInitSubcommand(t *testing.T) {
 		".gitignore",
 		"go.mod",
 		"README.md",
-		"test.go",
-		"test_test.go",
+		"main.go",
+		"main_test.go",
 		".goreleaser.yaml",
 	}
 	for _, file := range expectedFiles {
