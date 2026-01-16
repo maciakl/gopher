@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.4"
+const version = "0.7.5"
 
 func main() {
 
@@ -1145,18 +1145,6 @@ func versionBump(what string) {
     color.Cyan("Determining the name of the main file...")
 	name := getMainFileName()
 	
-	// check if main.go exists, if not, get the module name and check if that file exists
-	if _, err := os.Stat("main.go"); os.IsNotExist(err) {
-		color.Cyan("The file main.go does not exist. Getting module name from go.mod file...")
-		name = getModuleName()
-
-		if _, err := os.Stat(name + ".go"); os.IsNotExist(err) {
-			fmt.Print("💥 ")
-			color.Red("Could not find main.go or " + name + ".go file in the current directory.")
-			os.Exit(1)
-		}
-	}
-
     // get the current version
     color.Cyan("Getting current version from " + name + ".go file...")
     version := getVersion(name + ".go")
