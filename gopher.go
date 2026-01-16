@@ -429,13 +429,12 @@ func info() {
 	color.White("  Github user: \t" + username)
 	color.White("  Github URI: \t" + uri)
 	color.White("  Github repo: \t" + gh_origin)
-	color.White("  Github repo: \t" + gh_origin)
 	fmt.Println()
 
 
 	color.White("📃 Recent git commits:")
 
-	cmd = exec.Command("git", "log", "--oneline", "--graph", "--decorate", "-10")
+	cmd = exec.Command("git", "log", "--oneline", "--graph", "--decorate", "-6")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	e = cmd.Run()
