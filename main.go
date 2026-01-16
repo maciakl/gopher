@@ -434,7 +434,7 @@ func info() {
 
 	color.White("📃 Recent git commits:")
 
-	cmd = exec.Command("git", "log", "--oneline", "--graph", "--decorate", "-6")
+	cmd = exec.Command("git", "log", "--oneline", "--graph", "--decorate", "-8")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	e = cmd.Run()

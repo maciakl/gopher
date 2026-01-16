@@ -6,14 +6,12 @@ BINARY_NAME := "gopher"
 clean:
     go clean
 
-    rm {{BINARY_NAME}}_*.zip
     rm -rf test 
     rm -rf dist 
 
 [windows]
 clean:
 	go clean
-	rm {{BINARY_NAME}}_*.zip
 	rm test -Force -Recurse -Confirm:$false
 	rm dist -Force -Recurse -Confirm:$false
 
