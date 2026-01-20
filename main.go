@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.7"
+const version = "0.7.8"
 
 func main() {
 
@@ -434,7 +434,7 @@ func info() {
 
 	color.White("📃 Recent git commits:")
 
-	cmd = exec.Command("git", "log", "--oneline", "--graph", "--decorate", "-8")
+	cmd = exec.Command("git", "--no-pager", "log", "--oneline", "--graph", "--decorate", "-10")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	e = cmd.Run()
