@@ -406,7 +406,9 @@ func TestGetVersion(t *testing.T) {
 		t.Fatalf("failed to write test file: %v", err)
 	}
 
-	if version := getVersion(file); version != "1.2.3" {
+	if version, err := getVersion(file); err != nil {
+		t.Fatalf("getVersion failed: %v", err)
+	} else if version != "1.2.3" {
 		t.Errorf("expected version to be '1.2.3', but got '%s'", version)
 	}
 }
@@ -435,7 +437,9 @@ func TestGetModuleName(t *testing.T) {
 	}
 	defer os.Chdir(oldWd)
 
-	if name := getModuleName(); name != "myproject" {
+	if name, err := getModuleName(); err != nil {
+		t.Fatalf("getModuleName failed: %v", err)
+	} else if name != "myproject" {
 		t.Errorf("expected module name to be 'myproject', but got '%s'", name)
 	}
 }
@@ -462,7 +466,9 @@ func TestGetModule(t *testing.T) {
 	}
 	defer os.Chdir(oldWd)
 
-	if module := getModule(); module != "github.com/maciakl/myproject" {
+	if module, err := getModule(); err != nil {
+		t.Fatalf("getModule failed: %v", err)
+	} else if module != "github.com/maciakl/myproject" {
 		t.Errorf("expected module to be 'github.com/maciakl/myproject', but got '%s'", module)
 	}
 }

@@ -18,6 +18,9 @@ const version = "0.7.8"
 
 func main() {
 
+	var err error = nil
+
+
 	// get number of arguments
 	if len(os.Args) == 1 {
 		banner()
@@ -49,35 +52,35 @@ func main() {
 			os.Exit(1)
 		}
 
-		createProject(os.Args[2])
+		err = createProject(os.Args[2])
 
 	// create a Makefile for the project
 	case "make":
 		banner()
-		createMakefile()
+		err = createMakefile()
 
 	// create a Justfile for the Project
 	case "just":
 		banner()
-		createJustfile()
+		err = createJustfile()
 
 	// build the project and zip it
 	case "release":
 		banner()
-		release()
+		err = release()
 
 	case "info":
 		banner()
-		info()
+		err = info()
 
 	// generate a scoop manifest file
 	case "scoop":
 		banner()
-		generateScoopFile()
+		err = generateScoopFile()
 
 	case "install":
 		banner()
-		installProject()
+		err = installProject()
 
     // bump version number
     case "bump":
@@ -96,6 +99,12 @@ func main() {
 		banner()
 		color.Red("❌  Unknown subcommand.")
 		printUsage()
+		os.Exit(1)
+	}
+
+	if err != nil {
+		color.Red("💀 Gopher terminated abnormally with the following error:")
+		color.Red(err.Error())
 		os.Exit(1)
 	}
 }
@@ -139,13 +148,13 @@ func printUsage() {
 	fmt.Println("        display this help message and exit")
 }
 
-func check() {
+func check() error {
 	// check if go is installed
 	_, err := exec.LookPath("go")
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Go is not installed. Please install Go and try again.")
-		os.Exit(1)
+		return err
 	}
 
 	// check if git is installed
@@ -153,7 +162,7 @@ func check() {
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Git is not installed. Please install Git and try again.")
-		os.Exit(1)
+		return err
 	}
 
 	// check if goreleaser is installed
@@ -161,8 +170,10 @@ func check() {
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Goreleaser is not installed. Please install Goreleaser and try again.")
-		os.Exit(1)
+		return err
 	}
+	
+	return nil
 }
 
 // find a text line inside a file that matches the pattern
@@ -201,9 +212,10 @@ func replaceInFile(filename string, find string, replace string) error {
 }
 
 // This function creates a new project with a given name.
-func createProject(uri string) {
+func createProject(uri string) error {
 
-	check()
+	err := check()
+	if err != nil {	return err }
 
 	errors := 0
 	var name, username string
@@ -378,34 +390,47 @@ func createProject(uri string) {
 	// print the success message
 	if errors == 0 {
 		color.Green("✔  Project " + name + " created successfully.")
+		return nil
 	} else {
 		color.Green("⚠  Project " + name + " created with some errors.")
+		return fmt.Errorf("project creation completed with %d errors", errors)
 	}
 }
 
 // get the main file name
-func getMainFileName() string {
+func getMainFileName() (string, error) {
 	name := "main"
+	var e error
 	// check if main.go exists, if not, get the module name and check if that file exists
 	if _, err := os.Stat("main.go"); os.IsNotExist(err) {
-		name = getModuleName()
+		name, e = getModuleName()
+		if e != nil { return "", e }	
 		if _, err := os.Stat(name + ".go"); os.IsNotExist(err) {
 			fmt.Print("💥 ")
 			color.Red("Could not find main.go or " + name + ".go file in the current directory")
-			os.Exit(1)
+			return "", err
 		}
 	}
-	return name
+	return name	, nil
 }
 
 // dislpay info about the project
-func info() {
+func info() error {
 
-	name := getMainFileName()
-	version := getVersion(name + ".go")
-	uri := getModule()
+	name, err := getMainFileName()
+
+	if err != nil { return err }
+
+	version, ev := getVersion(name + ".go")
+	if ev != nil { return ev }
+
+	uri, em := getModule()
+	if em != nil { return em }
+
 	username := getUsername(uri)
-	gh_origin := getGitOrigin()
+	gh_origin, eg := getGitOrigin()
+	if eg != nil { return eg }
+
 	git_tag := getGitTag()
 	git_tag_commit := getGitCommit(git_tag)
 	git_head := getGitCommit("HEAD")
@@ -444,19 +469,20 @@ func info() {
 	}
 
 	fmt.Println()
+	return nil
 }
 
 // get github origin from git
-func getGitOrigin() string {
+func getGitOrigin() (string, error) {
 	cmd := exec.Command("git", "config", "--get", "remote.origin.url")
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Print("💥 ")
 		color.Red("Error getting git origin")
 		color.Red(err.Error())
-		os.Exit(1)
+		return "", err
 	}
-	return strings.TrimSpace(string(output))
+	return strings.TrimSpace(string(output)), nil
 }
 
 // get latest git tag from git 
@@ -480,16 +506,20 @@ func getGitCommit(tag string) string {
 }
 
 // release the project using goreleaser
-func release() {
+func release() error {
 
-	check()
+	err := check()
+	if err != nil { return err }
 
 	color.Cyan("Releasing the project ...")
 	color.Cyan("This will build the project for multiple platforms and create a new github release.")
 	color.White("💬  Make sure you edit the .goreleaser.yml file to set up how the project should get released.")
 
-	name := getMainFileName()
-	version := getVersion(name + ".go")
+	name, en := getMainFileName()
+	if en != nil { return en }
+
+	version, ev := getVersion(name + ".go")
+	if ev != nil { return ev }
 
 	// add a tag for the current version
 	color.Cyan("Tagging the current version v" + version + "...")
@@ -500,7 +530,7 @@ func release() {
 	if e != nil {
 		fmt.Print("💥 ")
 		color.Red(e.Error())
-		os.Exit(1)
+		return e
 	}
 	color.Blue("🆗 Git tag added successfully.")
 
@@ -526,17 +556,18 @@ func release() {
 			fmt.Print("💥 ")
 			color.Red(e.Error())
 			color.Yellow("⚠  Failed to remove tag, run git tag v" + version + " manually before re-running this command")
-			os.Exit(1)
+			return e
 		}
 	}
 
 	color.Blue("🆗 goreleaser ran successfully.")
 	color.Green("✔  Project released successfully. Check your github page for the new release")
+	return nil
 }
 
 
 // generate a scoop manifest file
-func generateScoopFile() {
+func generateScoopFile() error {
 
 	color.Cyan("Generating scoop manifest file...")
 
@@ -545,14 +576,15 @@ func generateScoopFile() {
 		// warn
 		color.Yellow("⚠  dist/ folder does not exist in the project directory.")
 		color.White("💬  Make sure you have built the project using gopher release")
-		os.Exit(1)
+		return err
 	}
 
 	
 	var name, username, version, description, homepage, url string
 
 	color.Cyan("Getting module string from go.mod file...")
-	uri := getModule()
+	uri, em := getModule()
+	if em != nil { return em }
 
 	// check if the module string is a uri
 	if strings.Contains(uri, "/") {
@@ -577,8 +609,12 @@ func generateScoopFile() {
     color.Blue("🆗 Got your github username: " + username)
 
 	color.Cyan("Getting version from gopher.go file...")
-	mainfile := getMainFileName()
-	version = getVersion(mainfile + ".go")
+	mainfile, en := getMainFileName()
+	if en != nil { return en }
+
+	var ev error
+	version, ev = getVersion(mainfile + ".go")
+	if ev != nil { return ev }
 
     color.Blue("🆗 Got the project version: " + version)
 
@@ -618,7 +654,7 @@ func generateScoopFile() {
 	if err != nil {
 		color.Red("Error creating " + scoopfile_path)
 		color.Red(err.Error())
-		os.Exit(1)
+		return err
 	}
 	defer mfile.Close()
 
@@ -674,14 +710,16 @@ func generateScoopFile() {
 
 	if errors == 0 {
 		color.Green("✔  Scoop manifest file " + name + ".json created successfully.")
+		return nil
 	} else {
 		color.Green("⚠  Scoop manifest file " + name + ".json created with some warnings.")
+		return fmt.Errorf("scoop manifest creation completed with %d warnings", errors)
 	}
 
 }
 
 // searches the file name.go for a constant named version and returns its value
-func getVersion(filename string) string {
+func getVersion(filename string) (string, error) {
 
 	line, err := findInFile(filename, "const version")
 
@@ -689,15 +727,15 @@ func getVersion(filename string) string {
 		fmt.Print("💥 ")
 		color.Red("Error opening file " + filename)
 		color.Red(err.Error())
-		os.Exit(1)
+		return "", err
 	}
 
 	quoted_version := strings.Split(line, "=")[1]
-	return strings.Trim(quoted_version, " \"")
+	return strings.Trim(quoted_version, " \""), nil
 }
 
 // searches go.mod file for the module name and returns it as string
-func getModuleName() string {
+func getModuleName() (string, error) {
 
 	line, err := findInFile("go.mod", "module")
 
@@ -705,21 +743,21 @@ func getModuleName() string {
 		fmt.Print("💥 ")
 		color.Red("Error opening go.mod file")
 		color.Red(err.Error())
-		os.Exit(1)
+		return "", err
 	}
 
 	url := strings.Split(line, " ")[1]
 
 	// if the url contains / then it's a github url an we need to extract the last part
 	if strings.Contains(url, "/") {
-		return getName(url)
+		return getName(url), nil
 	} else {
-		return url
+		return url, nil
 	}
 }
 
 // search the go.mod file for the module string and return it
-func getModule() string {
+func getModule() (string, error) {
 
 	line, err := findInFile("go.mod", "module")
 
@@ -727,10 +765,10 @@ func getModule() string {
 		fmt.Print("💥 ")
 		color.Red("Error opening go.mod file")
 		color.Red(err.Error())
-		os.Exit(1)
+		return "", err
 	}
 
-	return strings.Split(line, " ")[1]
+	return strings.Split(line, " ")[1], nil
 }
 
 // function that takes in a github uri and returns the last part of it
@@ -751,10 +789,11 @@ func banner() {
 
 // this funtion will istall the project binary in the user's provate bin directory
 // this will be ~/bin on linux and mac and %USERPROFILE%\bin on windows
-func installProject() {
+func installProject() error {
 
 	// get project name from go.mod file
-	name := getModuleName()
+	name, em := getModuleName()
+	if em != nil { return em }
 
 	color.Cyan("Installing " + name + "...")
 
@@ -800,7 +839,7 @@ func installProject() {
 		if _, err := os.Stat(installpath); os.IsNotExist(err) {
 			fmt.Print("💥 ")
 			color.Red("The " + installpath + " directory does not exist. Please create it and add it to your path first.")
-			os.Exit(1)
+			return err
 		}
 
 		// copy the binary to the bin directory
@@ -811,7 +850,7 @@ func installProject() {
 		if err != nil {
 			fmt.Print("💥 ")
 			color.Red(err.Error())
-			os.Exit(1)
+			return err
 		}
 
 	} else {
@@ -832,7 +871,7 @@ func installProject() {
 		if _, err := os.Stat(installpath); os.IsNotExist(err) {
 			fmt.Print("💥 ")
 			color.Red("The " + installpath + " directory does not exist. Please create it and add it to your path first.")
-			os.Exit(1)
+			return err
 		}
 
 		// copy the binary to the bin directory
@@ -845,7 +884,7 @@ func installProject() {
 		if e != nil {
 			fmt.Print("💥 ")
 			color.Red(e.Error())
-			os.Exit(1)
+			return e
 		}
 
 	}
@@ -854,14 +893,16 @@ func installProject() {
 
     color.White("💬 Make sure " + installpath + " is in your PATH")
 	color.Green("✔  " + name + " installed successfully into " + installpath)
+	return nil
 }
 
-func createMakefile() {
+func createMakefile() error {
 
 	color.Cyan("Creating Makefile...")
 
 	color.Cyan("Getting module name from go.mod file...")
-	name := getModuleName()
+	name, em := getModuleName()
+	if em != nil { return em }
 
 	color.Cyan("Generating the Makefile content...")
 	content := fmt.Sprintf(`BINARY_NAME=%s
@@ -898,21 +939,23 @@ test: build
 		fmt.Print("💥 ")
 		color.Red("Error creating Makefile")
 		color.Red(err.Error())
-		os.Exit(1)
+		return err
 	}
 	defer mfile.Close()
 
 	color.Cyan("Writing the Makefile content to disk...")
 	mfile.WriteString(content)
 	color.Green("✔  Makefile created successfully.")
+	return nil
 }
 
-func createJustfile() {
+func createJustfile() error {
 
 	color.Cyan("Creating Justfile...")
 
 	color.Cyan("Getting module name from go.mod file...")
-	name := getModuleName()
+	name, em := getModuleName()
+	if em != nil { return em }
 
 	color.Cyan("Generating the Justfile content...")
 	content := fmt.Sprintf(`BINARY_NAME := "%s"
@@ -943,16 +986,17 @@ test: build
 		fmt.Print("💥 ")
 		color.Red("Error creating Justfile")
 		color.Red(err.Error())
-		os.Exit(1)
+		return err
 	}
 	defer jfile.Close()
 
 	color.Cyan("Writing the Justfile content to disk...")
 	jfile.WriteString(content)
 	color.Green("✔  Justfile created successfully.")
+	return nil
 }
 
-func createMainFile() {
+func createMainFile() error {
 
 	color.Cyan("Getting module name from go.mod file contents...")
 	name := "main"
@@ -1003,18 +1047,21 @@ func Usage() {
 		fmt.Print("💥 ")
 		color.Red("Error creating " + name + ".go file")
 		color.Red(err.Error())
-		os.Exit(1)
+		return err
 	}
 
 	color.Cyan("Writing the " + name + ".go file content to disk...")
 	gfile.WriteString(content)
 	color.Blue("🆗 " + name + ".go file created successfully.")
+	return nil
 }
 
-func createTestFile() {
+func createTestFile() error {
 
 	color.Cyan("Getting module name from go.mod file contents...")
-	name := getMainFileName()
+	name, em := getMainFileName()
+
+	if em != nil { return em }
 	filename := name + "_test.go"
 
 	color.Cyan("Generating the " + filename + " file...")
@@ -1117,12 +1164,13 @@ func TestWrongFlag(t *testing.T) {
 		fmt.Print("💥 ")
 		color.Red("Error creating " + filename + " file")
 		color.Red(err.Error())
-		os.Exit(1)
+		return err
 	}
 
 	color.Cyan("Writing the " + filename + " file content to disk...")
 	gfile.WriteString(content)
 	color.Blue("🆗 " + filename + " file created successfully.")
+	return nil
 }
 
 
@@ -1133,21 +1181,23 @@ func incString(s string) string {
 
 
 // bump the version number in the version constant of the main file
-func versionBump(what string) {
+func versionBump(what string) error {
 
     if what != "major" && what != "minor" && what != "build" && what != "patch"{
         fmt.Print("💥 ")
         color.Red("Invalid argument for bump subcommand. Use major, minor, or patch.")
         printUsage()
-        os.Exit(1)
+        return fmt.Errorf("invalid argument for bump subcommand")
     }
 
     color.Cyan("Determining the name of the main file...")
-	name := getMainFileName()
+	name, em := getMainFileName()
+	if em != nil { return em }
 	
     // get the current version
     color.Cyan("Getting current version from " + name + ".go file...")
-    version := getVersion(name + ".go")
+    version, ev := getVersion(name + ".go")
+	if ev != nil { return ev }
 
     color.Blue("🆗 Current version is " + version)
     color.Cyan("Bumping the version number...")
@@ -1186,10 +1236,11 @@ func versionBump(what string) {
         fmt.Print("💥 ")
         color.Red("Error modifying the source file")
         color.Red(err.Error())
-        os.Exit(1)
+        return err
     }
 
     color.Blue("🆗 Version number replaced successfully.")
     color.Green("✔  Version bumped to " + new_version)
 
+	return nil
 }
