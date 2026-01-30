@@ -14,7 +14,7 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.8"
+const version = "0.7.9"
 
 func main() {
 
@@ -92,7 +92,7 @@ func main() {
             os.Exit(1)
         }
 
-        versionBump(os.Args[2])
+        err = versionBump(os.Args[2])
 
 	// print usage and exit
 	default:
@@ -103,8 +103,7 @@ func main() {
 	}
 
 	if err != nil {
-		color.Red("💀 Gopher terminated abnormally with the following error:")
-		color.Red(err.Error())
+		color.Black(fmt.Sprintf("💀 Gopher terminated abnormally with the following error: [ %s ]", err.Error()))
 		os.Exit(1)
 	}
 }
@@ -308,7 +307,7 @@ func createProject(uri string) error {
 		fmt.Print("💥 ")
 		color.Red("Error creating README.md file")
 		color.Red(err.Error())
-		os.Exit(1)
+		return err
 	}
 	rfile.WriteString("# " + name + "\n")
 	rfile.Close()
