@@ -6,5 +6,7 @@ gopher_*.tgz
 test
 Makefile
 .env
+coverage
+coverage.*
 # Added by goreleaser init:
 dist/
