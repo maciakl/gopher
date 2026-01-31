@@ -224,6 +224,47 @@ func TestReplaceInFile(t *testing.T) {
 			t.Error("expected an error, got nil")
 		}
 	})
+
+	t.Run("read-permission-denied", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		tmpFile := filepath.Join(tmpDir, "read_only.txt")
+		content := "some content"
+		if err := os.WriteFile(tmpFile, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Change permissions to be non-readable (write-only for owner, no access for others)
+		if err := os.Chmod(tmpFile, 0000); err != nil { // 0000 means no permissions for anyone
+			// On Windows, changing permissions to 0000 might not fully prevent read,
+			// but will likely cause an access denied error.
+			// This test might behave differently on Windows vs Unix-like systems.
+			t.Fatalf("failed to change file permissions: %v", err)
+		}
+
+		err := replaceInFile(tmpFile, "content", "changed")
+		if err == nil {
+			t.Error("expected an error due to read permission denied, got nil")
+		}
+		// Restore permissions for cleanup, though TempDir cleans up anyway
+		os.Chmod(tmpFile, 0644)
+	})
+
+	t.Run("write-permission-denied", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		tmpFile := filepath.Join(tmpDir, "no_write.txt")
+		content := "some content"
+		if err := os.WriteFile(tmpFile, []byte(content), 0444); err != nil { // 0444 means read-only for all
+			t.Fatal(err)
+		}
+
+		err := replaceInFile(tmpFile, "content", "changed")
+		if err == nil {
+			t.Error("expected an error due to write permission denied, got nil")
+		}
+		// Restore permissions for cleanup
+		os.Chmod(tmpFile, 0644)
+	})
+
 }
 
 func TestVersionBump(t *testing.T) {
