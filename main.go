@@ -1184,6 +1184,13 @@ func incString(s string) string {
 // bump the version number in the version constant of the main file
 func versionBump(what string) error {
 
+    // check for the existence of go.mod
+    if _, err := os.Stat("go.mod"); os.IsNotExist(err) {
+        fmt.Print("💥 ")
+        color.Red("Error: go.mod file not found in the current directory.")
+        return fmt.Errorf("go.mod file not found")
+    }
+
     if what != "major" && what != "minor" && what != "build" && what != "patch"{
         fmt.Print("💥 ")
         color.Red("Invalid argument for bump subcommand. Use major, minor, or patch.")

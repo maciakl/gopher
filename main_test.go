@@ -325,6 +325,101 @@ const version = "1.2.3"
 			t.Error("expected an error for invalid bump type, got nil")
 		}
 	})
+
+	t.Run("main-go-not-found", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		goMod := filepath.Join(tmpDir, "go.mod")
+		if err := os.WriteFile(goMod, []byte("module gopher"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		err := versionBump("patch")
+		if err == nil {
+			t.Error("expected an error when main.go is not found, got nil")
+		}
+		if err != nil && !strings.Contains(err.Error(), "Could not find main.go or gopher.go file in the current directory") {
+			t.Errorf("expected error for main.go not found, got %v", err)
+		}
+	})
+
+	t.Run("go-mod-not-found", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		mainGo := filepath.Join(tmpDir, "main.go")
+		content := `package main
+const version = "1.2.3"
+`
+		if err := os.WriteFile(mainGo, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		err := versionBump("patch")
+		if err == nil {
+			t.Error("expected an error when go.mod is not found, got nil")
+		}
+		if err != nil && !strings.Contains(err.Error(), "go.mod file not found") {
+			t.Errorf("expected error for go.mod not found, got %v", err)
+		}
+	})
+
+	t.Run("main-go-read-permission-denied", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		mainGo := filepath.Join(tmpDir, "main.go")
+		goMod := filepath.Join(tmpDir, "go.mod")
+		if err := os.WriteFile(goMod, []byte("module gopher"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		content := `package main
+const version = "1.2.3"
+`
+		if err := os.WriteFile(mainGo, []byte(content), 0000); err != nil { // No permissions
+			t.Fatal(err)
+		}
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		err := versionBump("patch")
+		if err == nil {
+			t.Error("expected an error due to read permission denied on main.go, got nil")
+		}
+		if err != nil && !strings.Contains(err.Error(), "permission denied") && !strings.Contains(err.Error(), "Access is denied.") {
+			t.Errorf("expected permission denied error, got %v", err)
+		}
+		os.Chmod(mainGo, 0644) // Clean up permissions
+	})
+
+	t.Run("main-go-write-permission-denied", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		mainGo := filepath.Join(tmpDir, "main.go")
+		goMod := filepath.Join(tmpDir, "go.mod")
+		if err := os.WriteFile(goMod, []byte("module gopher"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		content := `package main
+const version = "1.2.3"
+`
+		if err := os.WriteFile(mainGo, []byte(content), 0444); err != nil { // Read-only
+			t.Fatal(err)
+		}
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		err := versionBump("patch")
+		if err == nil {
+			t.Error("expected an error due to write permission denied on main.go, got nil")
+		}
+		if err != nil && !strings.Contains(err.Error(), "permission denied") && !strings.Contains(err.Error(), "Access is denied.") {
+			t.Errorf("expected permission denied error, got %v", err)
+		}
+		os.Chmod(mainGo, 0644) // Clean up permissions
+	})
 }
 
 func TestCreateMakefile(t *testing.T) {
