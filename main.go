@@ -71,7 +71,7 @@ func main() {
 
 	case "info":
 		banner()
-		err = info()
+		_, err = info()
 
 	// generate a scoop manifest file
 	case "scoop":
@@ -413,69 +413,84 @@ func getMainFileName() (string, error) {
 	return name	, nil
 }
 
+type Info struct {
+	name			string
+	project			string
+	version			string
+	git_tag 		string
+	git_tag_commit	string
+	git_head		string
+	git_branch		string
+	git_state		string
+	gh_username		string	
+	gh_uri			string
+	gh_origin		string
+}
+
 // dislpay info about the project
-func info() error {
+func info() (Info, error) {
 
-	name, err := getMainFileName()
-	if err != nil { return err }
+	var err error
+	info := Info{}
 
-	project,err := getModuleName()
-	if err != nil { return err }
+	info.name, err = getMainFileName()
+	if err != nil { return Info{}, err }
+
+	info.project, err = getModuleName()
+	if err != nil { return Info{}, err }
 
 
-	version, ev := getVersion(name + ".go")
-	if ev != nil { return ev }
+	info.version, err = getVersion(info.name + ".go")
+	if err != nil { return Info{},err }
 
-	uri, em := getModule()
-	if em != nil { return em }
+	info.gh_uri, err = getModule()
+	if err != nil { return Info{}, err }
 
-	username := getUsername(uri)
-	gh_origin, eg := getGitOrigin()
-	if eg != nil { return eg }
+	info.gh_username = getUsername(info.gh_uri)
+	info.gh_origin, err = getGitOrigin()
+	if err != nil { return Info{}, err }
 
-	git_tag := getGitTag()
-	git_tag_commit := getGitCommit(git_tag)
-	git_head := getGitCommit("HEAD")
-	git_state := "✔️ clean"
+	info.git_tag = getGitTag()
+	info.git_tag_commit = getGitCommit(info.git_tag)
+	info.git_head = getGitCommit("HEAD")
 
-	// run git diff --quiet and check the exit code to see if repo is clean or dirty
-	cmd := exec.Command("git", "diff", "--quiet")
-	e := cmd.Run()
-	if e != nil {
-		git_state = "❌ dirty"
+	if getGitClean() {
+		info.git_state = "✔️ clean"
+	} else {
+		info.git_state = "❌ dirty"
 	}
 
 	// get git branch name
-	git_branch, err := getGitBranch()
-	if err != nil { return err }
+	info.git_branch, err = getGitBranch()
+	if err != nil { return Info{}, err }
 
 	fmt.Println()
 	color.White("📝 Project information:")
-	color.White("  Project Name:\t" + project)
-	color.White("  Version:\t" + version)
-	color.White("  Git tag: \t" + git_tag + " (" + git_tag_commit + ")")
-	color.White("  Git HEAD: \t" + git_head)
-	color.White("  Git branch:\t" + git_branch)
-	color.White("  Git State: \t" + git_state)
-	color.White("  Github user: \t" + username)
-	color.White("  Github URI: \t" + uri)
-	color.White("  Github repo: \t" + gh_origin)
+	color.White("  Project Name:\t" + info.project)
+	color.White("  Version:\t" + info.version)
+	color.White("  Git tag: \t" + info.git_tag + " (" + info.git_tag_commit + ")")
+	color.White("  Git HEAD: \t" + info.git_head)
+	color.White("  Git branch:\t" + info.git_branch)
+	color.White("  Git State: \t" + info.git_state)
+	color.White("  Github user: \t" + info.gh_username)
+	color.White("  Github URI: \t" + info.gh_uri)
+	color.White("  Github repo: \t" + info.gh_origin)
 	fmt.Println()
 
 
 	color.White("📃 Recent git commits:")
 
-	cmd = exec.Command("git", "--no-pager", "log", "--oneline", "--graph", "--decorate", "-10")
+	cmd := exec.Command("git", "--no-pager", "log", "--oneline", "--graph", "--decorate", "-10")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	e = cmd.Run()
+	e := cmd.Run()
 	if e != nil {
 		// print warning	
 		color.Yellow("⚠  Failed to fetch git log")
 	}
 
 	fmt.Println()
-	return nil
+	return info, nil
 }
 
 func getGitBranch() (string, error) {
@@ -489,6 +504,19 @@ func getGitBranch() (string, error) {
 	}
 	return strings.TrimSpace(string(output)), nil
 }
+
+// check if git repo is clean
+func getGitClean() bool {
+
+	cmd := exec.Command("git", "diff", "--quiet")
+	e := cmd.Run()
+	if e != nil {
+		return false
+	}
+	return true
+}
+
+
 
 // get github origin from git
 func getGitOrigin() (string, error) {

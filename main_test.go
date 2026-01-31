@@ -999,6 +999,61 @@ func TestGitFunctions(t *testing.T) {
 			t.Errorf("expected commit %q, got %q", expectedCommit, commit)
 		}
 	})
+
+	t.Run("getGitBranch-success", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "main", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		branch, err := getGitBranch()
+		output := buff.String()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exp := "main"
+		if !strings.Contains(branch, exp) {
+			t.Errorf("expected info output to contain %q, got %q", exp, output)
+		}
+
+	})
+
+	t.Run("getGitBranch-error", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "", 1)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		_, err := getGitBranch()
+
+		if err == nil {
+			t.Fatalf("expected an error, got nil")
+		}
+	})
+
+	t.Run("getGitClean-true", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "main", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		clean := getGitClean()
+
+		if !clean {
+			t.Fatalf("expected clean to be true, got false")
+		}
+
+	})
+
+	t.Run("getGitClean-false", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "", 1)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		clean := getGitClean()
+
+		if clean {
+			t.Fatalf("expected clean to be false, got true")
+		}
+
+	})
+
+
 }
 
 
@@ -1034,6 +1089,7 @@ func TestInfo(t *testing.T) {
 	defer func() { color.Output = oldOut }()
 	var buff bytes.Buffer
 	color.Output = &buff
+	color.NoColor = true // Disable color for easier testing
 
 	origStdout := os.Stdout
 	origStderr := os.Stderr
@@ -1045,10 +1101,143 @@ func TestInfo(t *testing.T) {
 		os.Stderr = origStderr
 	}()
 
-	info()
+	// Save original PATH
+	originalPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", originalPath)
 
-	//output := buff.String()
+	tmpBinDir := t.TempDir()
 
-	
+	t.Run("info-success", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		_, err := info()
+		output := buff.String()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exp := "Project information:"
+		if !strings.Contains(output, exp) {
+			t.Errorf("expected info output to contain %q, got %q", exp, output)
+		}
+
+	})
+
+	t.Run("info-error", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "", 1)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		_,err := info()
+
+		if err == nil {
+			t.Fatalf("expected an error, got nil")
+		}
+	})
+
+	t.Run("info-gitTag", func(t *testing.T) {
+
+		createMockGit(t, tmpBinDir, "0.0.0", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		i, err := info()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exp := "0.0.0"
+		if !strings.Contains(i.git_tag, exp) {
+			t.Errorf("expected info to contain %q, got %q", exp, i.git_tag)
+		}
+
+	})
+
+	t.Run("info-gitHead", func(t *testing.T) {
+
+		createMockGit(t, tmpBinDir, "qwerty", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		i, err := info()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exp := "qwerty"
+		if !strings.Contains(i.git_head, exp) {
+			t.Errorf("expected info to contain %q, got %q", exp, i.git_tag)
+		}
+
+	})
+
+	t.Run("info-gitBranch", func(t *testing.T) {
+
+		createMockGit(t, tmpBinDir, "myfeature", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		i, err := info()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exp := "myfeature"
+		if !strings.Contains(i.git_branch, exp) {
+			t.Errorf("expected info to contain %q, got %q", exp, i.git_branch)
+		}
+
+	})
+
+
+	t.Run("info-ghRepo", func(t *testing.T) {
+
+		createMockGit(t, tmpBinDir, "git@github.com", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		i, err := info()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exp := "git@github.com"
+		if !strings.Contains(i.gh_origin, exp) {
+			t.Errorf("expected info to contain %q, got %q", exp, i.gh_origin)
+		}
+
+	})
+
+	t.Run("info-gitClean", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		i, err := info()
+
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		exp := "clean"
+		if !strings.Contains(i.git_state, exp) {
+			t.Errorf("expected info output to contain %q, got %q", exp, i.git_state)
+		}
+
+	})
+
+	t.Run("info-gitDirty", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "dirty", 1)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		i,_ := info()
+
+		exp := "dirty"
+		if !strings.Contains(i.git_state, exp) {
+			t.Errorf("expected info output to contain %q, got %q", exp, i.git_state)
+		}
+
+	})
+
 }
 
