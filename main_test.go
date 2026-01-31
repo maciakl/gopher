@@ -1004,9 +1004,21 @@ func TestGitFunctions(t *testing.T) {
 
 func TestBanner(t *testing.T) {
 
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
 	var buff bytes.Buffer
 	color.Output = &buff
-	color.NoColor = false
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	banner()
 	output := buff.String()
 	expectedSubstr := "🐿  Gopher v" + version
@@ -1014,3 +1026,29 @@ func TestBanner(t *testing.T) {
 		t.Errorf("expected banner to contain %q, got %q", expectedSubstr, output)
 	}	
 }
+
+
+func TestInfo(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
+	info()
+
+	//output := buff.String()
+
+	
+}
+
