@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -717,3 +718,102 @@ func TestCheck(t *testing.T) {
 		}
 	})
 }
+
+// createMockGit creates a mock 'git' executable in the given temporary directory.
+// The mock executable will print the specified output and exit with the given code.
+func createMockGit(t *testing.T, tmpBinDir string, output string, exitCode int) {
+	var scriptContent string
+	gitPath := filepath.Join(tmpBinDir, "git")
+
+	if runtime.GOOS == "windows" {
+		gitPath += ".bat"
+		// For Windows, ensure the output goes to stdout and exit code is set
+		scriptContent = fmt.Sprintf("@echo %s\n@exit /b %d", output, exitCode)
+	} else {
+		scriptContent = fmt.Sprintf("#!/bin/sh\necho \"%s\"\nexit %d", output, exitCode)
+	}
+
+	if err := os.WriteFile(gitPath, []byte(scriptContent), 0755); err != nil {
+		t.Fatalf("failed to create mock git executable: %v", err)
+	}
+}
+
+func TestGitFunctions(t *testing.T) {
+	// Save original PATH
+	originalPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", originalPath)
+
+	tmpBinDir := t.TempDir()
+
+	t.Run("getGitOrigin-success", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "https://github.com/user/repo.git", 0)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		origin, err := getGitOrigin()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		expectedOrigin := "https://github.com/user/repo.git"
+		if origin != expectedOrigin {
+			t.Errorf("expected origin %q, got %q", expectedOrigin, origin)
+		}
+	})
+
+	t.Run("getGitOrigin-error", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "fatal: not a git repository", 1)
+		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
+
+		_, err := getGitOrigin()
+		if err == nil {
+			t.Error("expected an error, got nil")
+		}
+		if err != nil && !strings.Contains(err.Error(), "exit status 1") {
+			t.Errorf("expected error to contain %q, got %q", "exit status 1", err.Error())
+		}
+	})
+
+	t.Run("getGitTag-success", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "v1.0.0", 0)
+		t.Setenv("PATH", tmpBinDir)
+
+		tag := getGitTag()
+		expectedTag := "v1.0.0"
+		if tag != expectedTag {
+			t.Errorf("expected tag %q, got %q", expectedTag, tag)
+		}
+	})
+
+	t.Run("getGitTag-error", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "", 1) // Simulate git error (e.g., no tags)
+		t.Setenv("PATH", tmpBinDir)
+
+		tag := getGitTag()
+		expectedTag := "unknown"
+		if tag != expectedTag {
+			t.Errorf("expected tag %q, got %q", expectedTag, tag)
+		}
+	})
+
+	t.Run("getGitCommit-success", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "abcdef1", 0)
+		t.Setenv("PATH", tmpBinDir)
+
+		commit := getGitCommit("HEAD")
+		expectedCommit := "abcdef1"
+		if commit != expectedCommit {
+			t.Errorf("expected commit %q, got %q", expectedCommit, commit)
+		}
+	})
+
+	t.Run("getGitCommit-error", func(t *testing.T) {
+		createMockGit(t, tmpBinDir, "", 1) // Simulate git error
+		t.Setenv("PATH", tmpBinDir)
+
+		commit := getGitCommit("nonexistent")
+		expectedCommit := "unknown"
+		if commit != expectedCommit {
+			t.Errorf("expected commit %q, got %q", expectedCommit, commit)
+		}
+	})
+}
+
