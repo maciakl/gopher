@@ -417,8 +417,11 @@ func getMainFileName() (string, error) {
 func info() error {
 
 	name, err := getMainFileName()
-
 	if err != nil { return err }
+
+	project,err := getModuleName()
+	if err != nil { return err }
+
 
 	version, ev := getVersion(name + ".go")
 	if ev != nil { return ev }
@@ -442,13 +445,17 @@ func info() error {
 		git_state = "❌ dirty"
 	}
 
+	// get git branch name
+	git_branch, err := getGitBranch()
+	if err != nil { return err }
 
 	fmt.Println()
 	color.White("📝 Project information:")
-	color.White("  Project Name:\t" + name)
+	color.White("  Project Name:\t" + project)
 	color.White("  Version:\t" + version)
 	color.White("  Git tag: \t" + git_tag + " (" + git_tag_commit + ")")
 	color.White("  Git HEAD: \t" + git_head)
+	color.White("  Git branch:\t" + git_branch)
 	color.White("  Git State: \t" + git_state)
 	color.White("  Github user: \t" + username)
 	color.White("  Github URI: \t" + uri)
@@ -469,6 +476,18 @@ func info() error {
 
 	fmt.Println()
 	return nil
+}
+
+func getGitBranch() (string, error) {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Print("💥 ")
+		color.Red("Error getting git branch")
+		color.Red(err.Error())
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // get github origin from git
