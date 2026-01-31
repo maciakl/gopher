@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/fatih/color"
 )
 
 func TestGetName(t *testing.T) {
@@ -66,6 +69,18 @@ func TestIncString(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
+
+	
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	defer func() { os.Stdout = origStdout }()
+
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		tmpFile := filepath.Join(tmpDir, "main.go")
@@ -94,6 +109,23 @@ const version = "1.2.3"
 }
 
 func TestGetModule(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
+
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		tmpFile := filepath.Join(tmpDir, "go.mod")
@@ -129,6 +161,23 @@ func TestGetModule(t *testing.T) {
 }
 
 func TestGetModuleName(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
+	
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		tmpFile := filepath.Join(tmpDir, "go.mod")
@@ -269,6 +318,23 @@ func TestReplaceInFile(t *testing.T) {
 }
 
 func TestVersionBump(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
+	
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		mainGo := filepath.Join(tmpDir, "main.go")
@@ -321,6 +387,12 @@ const version = "1.2.3"
 	})
 
 	t.Run("invalid-bump-type", func(t *testing.T) {
+
+		origStdout := os.Stdout
+		_, w, _ := os.Pipe()
+		os.Stdout = w
+		defer func() { os.Stdout = origStdout }()
+
 		err := versionBump("invalid")
 		if err == nil {
 			t.Error("expected an error for invalid bump type, got nil")
@@ -424,6 +496,22 @@ const version = "1.2.3"
 }
 
 func TestCreateMakefile(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		originalDir, _ := os.Getwd()
@@ -458,6 +546,22 @@ func TestCreateMakefile(t *testing.T) {
 }
 
 func TestCreateJustfile(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		originalDir, _ := os.Getwd()
@@ -492,6 +596,22 @@ func TestCreateJustfile(t *testing.T) {
 }
 
 func TestCreateMainFile(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		originalDir, _ := os.Getwd()
@@ -526,6 +646,22 @@ func TestCreateMainFile(t *testing.T) {
 }
 
 func TestCreateTestFile(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	t.Run("success", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		originalDir, _ := os.Getwd()
@@ -560,6 +696,22 @@ func TestCreateTestFile(t *testing.T) {
 }
 
 func TestGetMainFileName(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	t.Run("main-exists", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		originalDir, _ := os.Getwd()
@@ -631,6 +783,22 @@ func TestGetMainFileName(t *testing.T) {
 }
 
 func TestCheck(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	// Save original PATH
 	originalPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", originalPath)
@@ -739,6 +907,22 @@ func createMockGit(t *testing.T, tmpBinDir string, output string, exitCode int) 
 }
 
 func TestGitFunctions(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() { 
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
 	// Save original PATH
 	originalPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", originalPath)
@@ -817,3 +1001,16 @@ func TestGitFunctions(t *testing.T) {
 	})
 }
 
+
+func TestBanner(t *testing.T) {
+
+	var buff bytes.Buffer
+	color.Output = &buff
+	color.NoColor = false
+	banner()
+	output := buff.String()
+	expectedSubstr := "🐿  Gopher v" + version
+	if !strings.Contains(output, expectedSubstr) {
+		t.Errorf("expected banner to contain %q, got %q", expectedSubstr, output)
+	}	
+}
