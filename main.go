@@ -288,6 +288,7 @@ func createProject(uri string) error {
 		color.Red("Error creating .gitignore", err)
 		os.Exit(1)
 	}
+	defer gfile.Close()
 
 	gfile.WriteString(".env\n")
 	gfile.WriteString(name + "\n")
@@ -296,7 +297,6 @@ func createProject(uri string) error {
 	gfile.WriteString(name + ".tgz\n")
 	gfile.WriteString(name + "_*.zip\n")
 	gfile.WriteString(name + "_*.tgz\n")
-	gfile.Close()
 
 	color.Blue("🆗 .gitignore file created.")
 
@@ -309,8 +309,8 @@ func createProject(uri string) error {
 		color.Red(err.Error())
 		return err
 	}
+	defer rfile.Close()
 	rfile.WriteString("# " + name + "\n")
-	rfile.Close()
 
 	color.Blue("🆗 README file created.")
 
@@ -1048,6 +1048,7 @@ func Usage() {
 		color.Red(err.Error())
 		return err
 	}
+	defer gfile.Close()
 
 	color.Cyan("Writing the " + name + ".go file content to disk...")
 	gfile.WriteString(content)
@@ -1165,6 +1166,7 @@ func TestWrongFlag(t *testing.T) {
 		color.Red(err.Error())
 		return err
 	}
+	defer gfile.Close()
 
 	color.Cyan("Writing the " + filename + " file content to disk...")
 	gfile.WriteString(content)
