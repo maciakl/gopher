@@ -407,7 +407,7 @@ func getMainFileName() (string, error) {
 		if _, err := os.Stat(name + ".go"); os.IsNotExist(err) {
 			fmt.Print("💥 ")
 			color.Red("Could not find main.go or " + name + ".go file in the current directory")
-			return "", err
+			return "", fmt.Errorf("Could not find main.go or %s.go file in the current directory", name)
 		}
 	}
 	return name	, nil

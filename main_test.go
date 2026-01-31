@@ -501,6 +501,27 @@ func TestGetMainFileName(t *testing.T) {
 		}
 	})
 
+	t.Run("module-exists-but-file-missing", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Create go.mod but no main.go or myproject.go
+		if err := os.WriteFile("go.mod", []byte("module myproject"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err := getMainFileName()
+		if err == nil {
+			t.Error("expected an error, got nil")
+		}
+		expectedErr := "Could not find main.go or myproject.go file in the current directory"
+		if err != nil && !strings.Contains(err.Error(), expectedErr) {
+			t.Errorf("expected error to contain %q, got %q", expectedErr, err.Error())
+		}
+	})
+
 	t.Run("no-main-or-module-file", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		originalDir, _ := os.Getwd()
