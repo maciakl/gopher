@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -1930,4 +1931,141 @@ func TestRelease(t *testing.T) {
 	})
 }
 
+var (
+	binName  = "gopher"
+	cmdPath  string
+	exitCode int
+)
+func TestMain(m *testing.M) {
+	// build the binary
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	build := exec.Command("go", "build", "-o", binName)
+	if err := build.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "cannot build %s: %s", binName, err)
+		os.Exit(1)
+	}
+	var err error
+	cmdPath, err = filepath.Abs(binName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cannot get absolute path to %s: %s", binName, err)
+		os.Exit(1)
+	}
+
+	// run the tests
+	exitCode = m.Run()
+
+	// clean up
+	os.Remove(binName)
+	os.Exit(exitCode)
+}
+
+func TestMainFunction(t *testing.T) {
+
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+	color.NoColor = true
+
+	t.Run("no-args", func(t *testing.T) {
+		cmd := exec.Command(cmdPath)
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+		err := cmd.Run()
+
+		if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+			if e.ExitCode() != 1 {
+				t.Fatalf("expected exit code 1, got %d", e.ExitCode())
+			}
+		}
+
+		expected := "Missing subcommand"
+		if !strings.Contains(out.String(), expected) {
+			t.Errorf("expected to contain %q, got %q", expected, out.String())
+		}
+	})
+
+	t.Run("version", func(t *testing.T) {
+		cmd := exec.Command(cmdPath, "version")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		expected := "Gopher v"
+		if !strings.Contains(out.String(), expected) {
+			t.Errorf("expected to contain %q, got %q", expected, out.String())
+		}
+	})
+
+	t.Run("help", func(t *testing.T) {
+		cmd := exec.Command(cmdPath, "help")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		expected := "Usage: gopher"
+		if !strings.Contains(out.String(), expected) {
+			t.Errorf("expected to contain %q, got %q", expected, out.String())
+		}
+	})
+
+	t.Run("unknown-subcommand", func(t *testing.T) {
+		cmd := exec.Command(cmdPath, "nonexistent")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+		err := cmd.Run()
+		if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+			if e.ExitCode() != 1 {
+				t.Fatalf("expected exit code 1, got %d", e.ExitCode())
+			}
+		}
+
+		expected := "Unknown subcommand"
+		if !strings.Contains(out.String(), expected) {
+			t.Errorf("expected to contain %q, got %q", expected, out.String())
+		}
+	})
+
+	t.Run("init-no-arg", func(t *testing.T) {
+		cmd := exec.Command(cmdPath, "init")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+		err := cmd.Run()
+		if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+			if e.ExitCode() != 1 {
+				t.Fatalf("expected exit code 1, got %d", e.ExitCode())
+			}
+		}
+		expected := "Missing argument for init subcommand"
+		if !strings.Contains(out.String(), expected) {
+			t.Errorf("expected to contain %q, got %q", expected, out.String())
+		}
+	})
+
+	t.Run("bump-no-arg", func(t *testing.T) {
+		cmd := exec.Command(cmdPath, "bump")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+		err := cmd.Run()
+		if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+			if e.ExitCode() != 1 {
+				t.Fatalf("expected exit code 1, got %d", e.ExitCode())
+			}
+		}
+		expected := "Missing argument for bump subcommand"
+		if !strings.Contains(out.String(), expected) {
+			t.Errorf("expected to contain %q, got %q", expected, out.String())
+		}
+	})
+}
 
