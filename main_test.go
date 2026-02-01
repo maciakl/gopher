@@ -2069,3 +2069,95 @@ func TestMainFunction(t *testing.T) {
 	})
 }
 
+func TestRunFunction(t *testing.T) {
+
+	// Keep backup of original os.Args
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+
+	// Redirect output to avoid polluting test logs
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+		color.NoColor = true
+	
+		devNull, _ := os.Open(os.DevNull)
+		defer devNull.Close()
+		origStdout := os.Stdout
+		origStderr := os.Stderr
+		os.Stdout = devNull
+		os.Stderr = devNull
+		defer func() {
+			os.Stdout = origStdout
+			os.Stderr = origStderr
+		}()
+	t.Run("no-subcommand", func(t *testing.T) {
+		os.Args = []string{"cmd"}
+		_, err := run()
+		if err == nil {
+			t.Error("expected an error, got nil")
+		}
+		if err.Error() != "missing subcommand" {
+			t.Errorf("expected error message 'missing subcommand', got %q", err.Error())
+		}
+	})
+
+	t.Run("version-flag", func(t *testing.T) {
+		os.Args = []string{"cmd", "version"}
+		s, err := run()
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		if s != "banner" {
+			t.Errorf("expected 'banner', got %q", s)
+		}
+	})
+
+	t.Run("help-flag", func(t *testing.T) {
+		os.Args = []string{"cmd", "help"}
+		s, err := run()
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if s != "usage" {
+			t.Errorf("expected 'usage', got %q", s)
+		}
+	})
+
+	t.Run("init-missing-arg", func(t *testing.T) {
+		os.Args = []string{"cmd", "init"}
+		_, err := run()
+		if err == nil {
+			t.Error("expected an error, got nil")
+		}
+		if err.Error() != "missing argument for init" {
+			t.Errorf("expected error message 'missing argument for init', got %q", err.Error())
+		}
+	})
+
+	t.Run("unknown-subcommand", func(t *testing.T) {
+		os.Args = []string{"cmd", "nonexistent"}
+		_, err := run()
+		if err == nil {
+			t.Error("expected an error, got nil")
+		}
+		if err.Error() != "unknown subcommand" {
+			t.Errorf("expected error message 'unknown subcommand', got %q", err.Error())
+		}
+	})
+
+	t.Run("bump-missing-arg", func(t *testing.T) {
+		os.Args = []string{"cmd", "bump"}
+		_, err := run()
+		if err == nil {
+			t.Error("expected an error, got nil")
+		}
+		if err.Error() != "missing argument for bump" {
+			t.Errorf("expected error message 'missing argument for bump', got %q", err.Error())
+		}
+	})
+
+}
+
