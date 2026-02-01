@@ -71,7 +71,7 @@ func main() {
 
 	case "info":
 		banner()
-		_, err = info()
+		_, err = info(false)
 
 	// generate a scoop manifest file
 	case "scoop":
@@ -428,7 +428,7 @@ type Info struct {
 }
 
 // dislpay info about the project
-func info() (Info, error) {
+func info(silent bool) (Info, error) {
 
 	var err error
 	info := Info{}
@@ -464,32 +464,35 @@ func info() (Info, error) {
 	info.git_branch, err = getGitBranch()
 	if err != nil { return Info{}, err }
 
-	fmt.Println()
-	color.White("📝 Project information:")
-	color.White("  Project Name:\t" + info.project)
-	color.White("  Version:\t" + info.version)
-	color.White("  Git tag: \t" + info.git_tag + " (" + info.git_tag_commit + ")")
-	color.White("  Git HEAD: \t" + info.git_head)
-	color.White("  Git branch:\t" + info.git_branch)
-	color.White("  Git State: \t" + info.git_state)
-	color.White("  Github user: \t" + info.gh_username)
-	color.White("  Github URI: \t" + info.gh_uri)
-	color.White("  Github repo: \t" + info.gh_origin)
-	fmt.Println()
+	if !silent {
+
+		fmt.Println()
+		color.White("📝 Project information:")
+		color.White("  Project Name:\t" + info.project)
+		color.White("  Version:\t" + info.version)
+		color.White("  Git tag: \t" + info.git_tag + " (" + info.git_tag_commit + ")")
+		color.White("  Git HEAD: \t" + info.git_head)
+		color.White("  Git branch:\t" + info.git_branch)
+		color.White("  Git State: \t" + info.git_state)
+		color.White("  Github user: \t" + info.gh_username)
+		color.White("  Github URI: \t" + info.gh_uri)
+		color.White("  Github repo: \t" + info.gh_origin)
+		fmt.Println()
 
 
-	color.White("📃 Recent git commits:")
+		color.White("📃 Recent git commits:")
 
-	cmd := exec.Command("git", "--no-pager", "log", "--oneline", "--graph", "--decorate", "-10")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	e := cmd.Run()
-	if e != nil {
-		// print warning	
-		color.Yellow("⚠  Failed to fetch git log")
+		cmd := exec.Command("git", "--no-pager", "log", "--oneline", "--graph", "--decorate", "-10")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		e := cmd.Run()
+		if e != nil {
+			// print warning	
+			color.Yellow("⚠  Failed to fetch git log")
+		}
+
+		fmt.Println()
 	}
-
-	fmt.Println()
 	return info, nil
 }
 

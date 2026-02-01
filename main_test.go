@@ -1113,7 +1113,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		_, err := info()
+		_, err := info(false)
 		output := buff.String()
 
 		if err != nil {
@@ -1131,7 +1131,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "", 1)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		_,err := info()
+		_,err := info(false)
 
 		if err == nil {
 			t.Fatalf("expected an error, got nil")
@@ -1144,7 +1144,7 @@ func TestInfo(t *testing.T) {
 		os.Chdir(tmpDir)
 		defer os.Chdir(originalDir)
 
-		_, err := info()
+		_, err := info(false)
 		if err == nil {
 			t.Error("expected an error, got nil")
 		}
@@ -1155,7 +1155,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "0.0.0", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info()
+		i, err := info(false)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1173,7 +1173,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "qwerty", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info()
+		i, err := info(false)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1191,7 +1191,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "myfeature", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info()
+		i, err := info(false)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1210,7 +1210,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "git@github.com", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info()
+		i, err := info(false)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1227,7 +1227,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info()
+		i, err := info(false)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1440,6 +1440,133 @@ func TestCreateProject(t *testing.T) {
 		err := createProject("some/project")
 		if err == nil {
 			t.Error("createProject should have failed due to missing dependency, but it didn't")
+		}
+	})
+}
+
+func TestInstallProject(t *testing.T) {
+	// Redirect output to avoid polluting test logs
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+	color.NoColor = true
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() {
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
+	originalPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", originalPath)
+
+	t.Run("no-go-mod", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		err := installProject()
+		if err == nil {
+			t.Error("expected an error when go.mod is missing, but got nil")
+		}
+		if !os.IsNotExist(err) {
+			t.Errorf("expected a file-not-found error, but got: %v", err)
+		}
+	})
+
+	t.Run("install-dir-not-exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Create a dummy go.mod and a main.go for the build to succeed
+		os.WriteFile("go.mod", []byte("module myproject"), 0644)
+		os.WriteFile("main.go", []byte("package main\nfunc main() {}"), 0644)
+
+		// Set home to a temp dir to control where ~/bin is
+		t.Setenv("HOME", tmpDir)
+		t.Setenv("USERPROFILE", tmpDir) // for Windows
+
+		err := installProject()
+		if err == nil {
+			t.Error("expected an error when bin directory is missing, but got nil")
+		}
+		if !os.IsNotExist(err) {
+			t.Errorf("expected a 'directory does not exist' error, got %v", err)
+		}
+	})
+
+	t.Run("success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		projectName := "mycoolproject"
+		// Create a dummy go.mod and a dummy binary to copy
+		os.WriteFile("go.mod", []byte(fmt.Sprintf("module %s", projectName)), 0644)
+
+		// Create a simple main.go to be built
+		mainGoContent := "package main\nfunc main() {}"
+		os.WriteFile("main.go", []byte(mainGoContent), 0644)
+
+		// Set home to a temp dir and create the bin subdir
+		homeDir := t.TempDir()
+		binDir := filepath.Join(homeDir, "bin")
+		os.Mkdir(binDir, 0755)
+		t.Setenv("HOME", homeDir)
+		t.Setenv("USERPROFILE", homeDir)
+
+		err := installProject()
+		if err != nil {
+			t.Fatalf("installProject failed unexpectedly: %v", err)
+		}
+
+		// Verify the binary was copied
+		binaryName := projectName
+		if runtime.GOOS == "windows" {
+			binaryName += ".exe"
+		}
+		finalPath := filepath.Join(binDir, binaryName)
+		if _, err := os.Stat(finalPath); os.IsNotExist(err) {
+			t.Errorf("expected binary %q to be installed in %q, but it was not found", binaryName, binDir)
+		}
+	})
+
+	t.Run("success-with-env-var", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		projectName := "myenvproject"
+		os.WriteFile("go.mod", []byte(fmt.Sprintf("module %s", projectName)), 0644)
+		os.WriteFile("main.go", []byte("package main\nfunc main() {}"), 0644)
+
+		// Create a custom install path
+		installDir := t.TempDir()
+		t.Setenv("GOPHER_INSTALLPATH", installDir)
+		defer os.Unsetenv("GOPHER_INSTALLPATH")
+
+		err := installProject()
+		if err != nil {
+			t.Fatalf("installProject failed unexpectedly: %v", err)
+		}
+
+		binaryName := projectName
+		if runtime.GOOS == "windows" {
+			binaryName += ".exe"
+		}
+		finalPath := filepath.Join(installDir, binaryName)
+		if _, err := os.Stat(finalPath); os.IsNotExist(err) {
+			t.Errorf("expected binary %q to be installed in %q, but it was not found", binaryName, installDir)
 		}
 	})
 }
