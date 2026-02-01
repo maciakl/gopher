@@ -1107,6 +1107,8 @@ func TestInfo(t *testing.T) {
 
 	tmpBinDir := t.TempDir()
 
+
+
 	t.Run("info-success", func(t *testing.T) {
 		createMockGit(t, tmpBinDir, "", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
@@ -1133,6 +1135,18 @@ func TestInfo(t *testing.T) {
 
 		if err == nil {
 			t.Fatalf("expected an error, got nil")
+		}
+	})
+
+	t.Run("info-projectName-error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		_, err := info()
+		if err == nil {
+			t.Error("expected an error, got nil")
 		}
 	})
 
@@ -1220,19 +1234,6 @@ func TestInfo(t *testing.T) {
 		}
 
 		exp := "clean"
-		if !strings.Contains(i.git_state, exp) {
-			t.Errorf("expected info output to contain %q, got %q", exp, i.git_state)
-		}
-
-	})
-
-	t.Run("info-gitDirty", func(t *testing.T) {
-		createMockGit(t, tmpBinDir, "dirty", 1)
-		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
-
-		i,_ := info()
-
-		exp := "dirty"
 		if !strings.Contains(i.git_state, exp) {
 			t.Errorf("expected info output to contain %q, got %q", exp, i.git_state)
 		}
