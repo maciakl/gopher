@@ -1242,3 +1242,205 @@ func TestInfo(t *testing.T) {
 
 }
 
+func createMockExecutable(t *testing.T, dir, name string) {
+	path := filepath.Join(dir, name)
+	var script string
+
+	if runtime.GOOS == "windows" {
+		path += ".bat"
+		script = "@echo off\r\n"
+
+		switch name {
+		case "go":
+			// Handles `go mod init <uri>`
+			script += `if /I "%~1" == "mod" if /I "%~2" == "init" echo module %3 > go.mod`
+		case "git":
+			// No action needed, just exit cleanly.
+		case "goreleaser":
+			// Handles `goreleaser init`
+			script += "if /I \"%~1\"==\"init\" (\r\n"
+			script += "  (echo archives: && echo   - name_template: '{{ .ProjectName }}_') > .goreleaser.yaml\r\n"
+			script += ")\r\n"
+		}
+		script += "\r\nexit /b 0\r\n"
+	} else {
+		script = "#!/bin/sh\n"
+		switch name {
+		case "go":
+			script += `if [ "$1" = "mod" ] && [ "$2" = "init" ]; then echo "module $3" > go.mod; fi`
+		case "git":
+			// no-op
+		case "goreleaser":
+			script += `if [ "$1" = "init" ]; then printf "archives:\n  - name_template: '{{ .ProjectName }}_'" > .goreleaser.yaml; fi`
+		}
+		script += "\nexit 0"
+	}
+
+	if err := os.WriteFile(path, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create mock executable %s: %v", name, err)
+	}
+}
+
+func TestCreateProject(t *testing.T) {
+	// Redirect output
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+	color.NoColor = true
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() {
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
+	// Save and restore original PATH
+	originalPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", originalPath)
+
+	// --- Test Cases ---
+
+	t.Run("success-full-uri", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Create mock executables in a temp bin dir
+		tmpBinDir := filepath.Join(tmpDir, "bin")
+		os.Mkdir(tmpBinDir, 0755)
+		createMockExecutable(t, tmpBinDir, "go")
+		createMockExecutable(t, tmpBinDir, "git")
+		createMockExecutable(t, tmpBinDir, "goreleaser")
+		t.Setenv("PATH", tmpBinDir)
+
+		projectName := "my-test-project"
+		githubUser := "testuser"
+		uri := fmt.Sprintf("github.com/%s/%s", githubUser, projectName)
+
+		err := createProject(uri)
+		if err != nil {
+			t.Fatalf("createProject failed unexpectedly: %v", err)
+		}
+
+		// Assertions
+		projectPath := filepath.Join(tmpDir, projectName)
+		if _, err := os.Stat(projectPath); os.IsNotExist(err) {
+			t.Errorf("project directory %q was not created in %s", projectName, tmpDir)
+		}
+
+		goModPath := filepath.Join(projectPath, "go.mod")
+		goModContent, err := os.ReadFile(goModPath)
+		if err != nil {
+			t.Fatalf("could not read go.mod: %v", err)
+		}
+		expectedModule := "module " + uri
+		if !strings.Contains(string(goModContent), expectedModule) {
+			t.Errorf("go.mod should contain %q, but got %q", expectedModule, string(goModContent))
+		}
+	})
+
+	t.Run("success-short-name-with-env-var", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		tmpBinDir := filepath.Join(tmpDir, "bin")
+		os.Mkdir(tmpBinDir, 0755)
+		createMockExecutable(t, tmpBinDir, "go")
+		createMockExecutable(t, tmpBinDir, "git")
+		createMockExecutable(t, tmpBinDir, "goreleaser")
+		t.Setenv("PATH", tmpBinDir)
+
+		projectName := "another-project"
+		githubUser := "testuser-env"
+		t.Setenv("GOPHER_USERNAME", githubUser)
+		defer os.Unsetenv("GOPHER_USERNAME")
+
+		err := createProject(projectName)
+		if err != nil {
+			t.Fatalf("createProject failed unexpectedly: %v", err)
+		}
+
+		goModPath := filepath.Join(tmpDir, projectName, "go.mod")
+		goModContent, err := os.ReadFile(goModPath)
+		if err != nil {
+			t.Fatalf("could not read go.mod: %v", err)
+		}
+		expectedModule := fmt.Sprintf("module github.com/%s/%s", githubUser, projectName)
+		if !strings.Contains(string(goModContent), expectedModule) {
+			t.Errorf("go.mod should contain %q, but got %q", expectedModule, string(goModContent))
+		}
+	})
+
+	t.Run("success-short-name-with-stdin", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		tmpBinDir := filepath.Join(tmpDir, "bin")
+		os.Mkdir(tmpBinDir, 0755)
+		createMockExecutable(t, tmpBinDir, "go")
+		createMockExecutable(t, tmpBinDir, "git")
+		createMockExecutable(t, tmpBinDir, "goreleaser")
+		t.Setenv("PATH", tmpBinDir)
+
+		projectName := "stdin-project"
+		githubUser := "stdin-user"
+
+		// Mock Stdin
+		input := fmt.Sprintf("%s\n", githubUser)
+		r, w, _ := os.Pipe()
+		w.WriteString(input)
+		w.Close()
+		origStdin := os.Stdin
+		os.Stdin = r
+		defer func() { os.Stdin = origStdin }()
+
+		// Make sure GOPHER_USERNAME is not set
+		os.Unsetenv("GOPHER_USERNAME")
+
+		err := createProject(projectName)
+		if err != nil {
+			t.Fatalf("createProject failed unexpectedly: %v", err)
+		}
+
+		goModPath := filepath.Join(tmpDir, projectName, "go.mod")
+		goModContent, err := os.ReadFile(goModPath)
+		if err != nil {
+			t.Fatalf("could not read go.mod: %v", err)
+		}
+		expectedModule := fmt.Sprintf("module github.com/%s/%s", githubUser, projectName)
+		if !strings.Contains(string(goModContent), expectedModule) {
+			t.Errorf("go.mod should contain %q, but got %q", expectedModule, string(goModContent))
+		}
+	})
+
+	t.Run("fail-check-missing-dep", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Mock only some executables
+		tmpBinDir := filepath.Join(tmpDir, "bin")
+		os.Mkdir(tmpBinDir, 0755)
+		createMockExecutable(t, tmpBinDir, "go")
+		createMockExecutable(t, tmpBinDir, "git")
+		// "goreleaser" is missing
+		t.Setenv("PATH", tmpBinDir)
+
+		err := createProject("some/project")
+		if err == nil {
+			t.Error("createProject should have failed due to missing dependency, but it didn't")
+		}
+	})
+}
+
