@@ -466,14 +466,21 @@ func info(silent bool) (Info, error) {
 	info.git_head = getGitCommit("HEAD")
 
 	if getGitClean() {
-		info.git_state = "✔️ clean"
+		info.git_state = "✔️ " + color.BlueString("clean")
 	} else {
-		info.git_state = "❌ dirty"
+		info.git_state = "❌ " + color.RedString("dirty")
 	}
 
 	// get git branch name
 	info.git_branch, err = getGitBranch()
 	if err != nil { return Info{}, err }
+
+	var branch string
+	if info.git_branch == "main" || info.git_branch == "master" {
+		branch = color.GreenString(info.git_branch)
+	} else {
+		branch = color.YellowString(info.git_branch)
+	}
 
 	if !silent {
 
@@ -483,7 +490,7 @@ func info(silent bool) (Info, error) {
 		color.White("  Version:\t" + info.version)
 		color.White("  Git tag: \t" + info.git_tag + " (" + info.git_tag_commit + ")")
 		color.White("  Git HEAD: \t" + info.git_head)
-		color.White("  Git branch:\t" + info.git_branch)
+		color.White("  Git branch:\t" + branch)
 		color.White("  Git State: \t" + info.git_state)
 		color.White("  Github user: \t" + info.gh_username)
 		color.White("  Github URI: \t" + info.gh_uri)
@@ -508,7 +515,7 @@ func info(silent bool) (Info, error) {
 }
 
 func getGitBranch() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd := exec.Command("git", "branch", "--show-current")
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Print("💥 ")
