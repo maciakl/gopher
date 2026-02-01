@@ -14,7 +14,23 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.11"
+const version = "0.7.12"
+
+// struct for capturing project info
+type Info struct {
+	name			string
+	project			string
+	version			string
+	git_tag 		string
+	git_tag_commit	string
+	git_head		string
+	git_branch		string
+	git_state		string
+	gh_username		string	
+	gh_uri			string
+	gh_origin		string
+}
+
 
 func main() {
 	
@@ -81,7 +97,11 @@ func run() (string, error) {
 
 	case "info":
 		banner()
-		_, err = info(false)
+		var i Info
+		i, err = getInfo()
+		if err == nil {
+			displayInfo(i)
+		}
 
 	// generate a scoop manifest file
 	case "scoop":
@@ -424,22 +444,8 @@ func getMainFileName() (string, error) {
 	return name	, nil
 }
 
-type Info struct {
-	name			string
-	project			string
-	version			string
-	git_tag 		string
-	git_tag_commit	string
-	git_head		string
-	git_branch		string
-	git_state		string
-	gh_username		string	
-	gh_uri			string
-	gh_origin		string
-}
-
 // dislpay info about the project
-func info(silent bool) (Info, error) {
+func getInfo() (Info, error) {
 
 	var err error
 	info := Info{}
@@ -475,6 +481,12 @@ func info(silent bool) (Info, error) {
 	info.git_branch, err = getGitBranch()
 	if err != nil { return Info{}, err }
 
+
+	return info, nil
+}
+
+func displayInfo(info Info) {
+
 	var branch string
 	if info.git_branch == "main" || info.git_branch == "master" {
 		branch = color.GreenString(info.git_branch)
@@ -482,36 +494,33 @@ func info(silent bool) (Info, error) {
 		branch = color.YellowString(info.git_branch)
 	}
 
-	if !silent {
 
-		fmt.Println()
-		color.White("📝 Project information:")
-		color.White("  Project Name:\t" + info.project)
-		color.White("  Version:\t" + info.version)
-		color.White("  Git tag: \t" + info.git_tag + " (" + info.git_tag_commit + ")")
-		color.White("  Git HEAD: \t" + info.git_head)
-		color.White("  Git branch:\t" + branch)
-		color.White("  Git State: \t" + info.git_state)
-		color.White("  Github user: \t" + info.gh_username)
-		color.White("  Github URI: \t" + info.gh_uri)
-		color.White("  Github repo: \t" + info.gh_origin)
-		fmt.Println()
+	fmt.Println()
+	color.White("📝 Project information:")
+	color.White("  Project Name:\t" + info.project)
+	color.White("  Version:\t" + info.version)
+	color.White("  Git tag: \t" + info.git_tag + " (" + info.git_tag_commit + ")")
+	color.White("  Git HEAD: \t" + info.git_head)
+	color.White("  Git branch:\t" + branch)
+	color.White("  Git State: \t" + info.git_state)
+	color.White("  Github user: \t" + info.gh_username)
+	color.White("  Github URI: \t" + info.gh_uri)
+	color.White("  Github repo: \t" + info.gh_origin)
+	fmt.Println()
 
 
-		color.White("📃 Recent git commits:")
+	color.White("📃 Recent git commits:")
 
-		cmd := exec.Command("git", "--no-pager", "log", "--oneline", "--graph", "--decorate", "-10")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		e := cmd.Run()
-		if e != nil {
-			// print warning	
-			color.Yellow("⚠  Failed to fetch git log")
-		}
-
-		fmt.Println()
+	cmd := exec.Command("git", "--no-pager", "log", "--oneline", "--graph", "--decorate", "-10")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	e := cmd.Run()
+	if e != nil {
+		// print warning	
+		color.Yellow("⚠  Failed to fetch git log")
 	}
-	return info, nil
+
+	fmt.Println()
 }
 
 func getGitBranch() (string, error) {
@@ -760,7 +769,8 @@ func generateScoopFile() error {
 		color.Cyan("Adding the sha256 checksum to the manifest file...")
 
 		bin_line := fmt.Sprintf(`    "url": "%s",`, url)
-		new_line := fmt.Sprintf(`    "url": "%s", "hash": "%s",`, url, hash)
+		new_line := fmt.Sprintf(`    "url": "%s",
+	"hash": "%s",`, url, hash) // indentation intentional, leave it alone
 
 		err = replaceInFile(scoopfile_path, bin_line, new_line)
 		if err != nil {

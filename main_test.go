@@ -1114,7 +1114,8 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		_, err := info(false)
+		i, err := getInfo()
+		displayInfo(i)
 		output := buff.String()
 
 		if err != nil {
@@ -1132,7 +1133,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "", 1)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		_,err := info(false)
+		_,err := getInfo()
 
 		if err == nil {
 			t.Fatalf("expected an error, got nil")
@@ -1145,7 +1146,7 @@ func TestInfo(t *testing.T) {
 		os.Chdir(tmpDir)
 		defer os.Chdir(originalDir)
 
-		_, err := info(false)
+		_, err := getInfo()	
 		if err == nil {
 			t.Error("expected an error, got nil")
 		}
@@ -1156,7 +1157,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "0.0.0", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info(false)
+		i, err := getInfo()	
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1174,7 +1175,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "qwerty", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info(false)
+		i, err := getInfo()
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1192,7 +1193,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "myfeature", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info(false)
+		i, err := getInfo()
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1211,7 +1212,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "git@github.com", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info(false)
+		i, err := getInfo()
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1228,7 +1229,7 @@ func TestInfo(t *testing.T) {
 		createMockGit(t, tmpBinDir, "", 0)
 		t.Setenv("PATH", tmpBinDir) // Temporarily set PATH to our mock git
 
-		i, err := info(false)
+		i, err := getInfo()
 
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
