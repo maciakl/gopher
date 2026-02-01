@@ -1571,3 +1571,138 @@ func TestInstallProject(t *testing.T) {
 	})
 }
 
+func TestGenerateScoopFile(t *testing.T) {
+	// Redirect output to avoid polluting test logs
+	oldOut := color.Output
+	defer func() { color.Output = oldOut }()
+	var buff bytes.Buffer
+	color.Output = &buff
+	color.NoColor = true
+
+	origStdout := os.Stdout
+	origStderr := os.Stderr
+	_, w, _ := os.Pipe()
+	os.Stdout = w
+	os.Stderr = w
+	defer func() {
+		os.Stdout = origStdout
+		os.Stderr = origStderr
+	}()
+
+	t.Run("dist-dir-not-exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		err := generateScoopFile()
+		if err == nil {
+			t.Error("expected an error when dist dir is missing, but got nil")
+		}
+	})
+
+	t.Run("go-mod-not-exist", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		os.Mkdir("dist", 0755)
+
+		err := generateScoopFile()
+		if err == nil {
+			t.Error("expected an error when go.mod is missing, but got nil")
+		}
+	})
+
+	t.Run("success-with-checksum", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		projectName := "myproject"
+		version := "1.0.0"
+		username := "testuser"
+		hash := "abcdef123456"
+
+		// Create necessary files and directories
+		os.Mkdir("dist", 0755)
+		os.WriteFile("go.mod", []byte(fmt.Sprintf("module github.com/%s/%s", username, projectName)), 0644)
+		os.WriteFile("main.go", []byte(fmt.Sprintf("package main\nconst version = \"%s\"", version)), 0644)
+		checksumContent := fmt.Sprintf("%s  %s_%s_Windows_x86_64.zip", hash, projectName, version)
+		os.WriteFile(filepath.Join("dist", fmt.Sprintf("%s_%s_checksums.txt", projectName, version)), []byte(checksumContent), 0644)
+
+		t.Setenv("GOPHER_USERNAME", username)
+		defer os.Unsetenv("GOPHER_USERNAME")
+
+		err := generateScoopFile()
+		if err != nil {
+			t.Fatalf("generateScoopFile failed: %v", err)
+		}
+
+		// Verify scoop file
+		scoopFilePath := filepath.Join("dist", projectName+".json")
+		if _, err := os.Stat(scoopFilePath); os.IsNotExist(err) {
+			t.Fatalf("scoop file %q was not created", scoopFilePath)
+		}
+
+		scoopContent, _ := os.ReadFile(scoopFilePath)
+		expectedURL := fmt.Sprintf("https://github.com/%s/%s/releases/download/v%s/%s_%s_Windows_x86_64.zip", username, projectName, version, projectName, version)
+		expectedContent := fmt.Sprintf(`{
+    "version": "%s",
+    "description": "A new scoop package",
+    "homepage": "https://github.com/%s/%s",
+    "checkver": "github",
+    "url": "%s",
+	"hash": "%s",
+    "bin": "%s",
+    "license": "freeware"
+}`, version, username, projectName, expectedURL, hash, projectName+".exe")
+
+		// Normalize line endings for comparison
+		normalizedExpected := strings.ReplaceAll(expectedContent, "\r\n", "\n")
+		normalizedGot := strings.ReplaceAll(string(scoopContent), "\r\n", "\n")
+
+		if normalizedGot != normalizedExpected {
+			t.Errorf("scoop file content mismatch.\nExpected:\n%s\nGot:\n%s", normalizedExpected, normalizedGot)
+		}
+
+	})
+
+	t.Run("success-without-checksum", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		projectName := "anotherproject"
+		version := "0.5.0"
+		username := "anotheruser"
+
+		os.Mkdir("dist", 0755)
+		os.WriteFile("go.mod", []byte(fmt.Sprintf("module github.com/%s/%s", username, projectName)), 0644)
+		os.WriteFile("main.go", []byte(fmt.Sprintf("package main\nconst version = \"%s\"", version)), 0644)
+		// No checksum file this time
+
+		t.Setenv("GOPHER_USERNAME", username)
+		defer os.Unsetenv("GOPHER_USERNAME")
+
+		err := generateScoopFile()
+		// Should return a warning, but not a fatal error
+		if err != nil && !strings.Contains(err.Error(), "warnings") {
+			t.Fatalf("generateScoopFile failed unexpectedly: %v", err)
+		}
+
+		scoopFilePath := filepath.Join("dist", projectName+".json")
+		if _, err := os.Stat(scoopFilePath); os.IsNotExist(err) {
+			t.Fatalf("scoop file %q was not created", scoopFilePath)
+		}
+
+		scoopContent, _ := os.ReadFile(scoopFilePath)
+		if strings.Contains(string(scoopContent), `"hash"`) {
+			t.Error("scoop file should not contain a hash when checksum is missing")
+		}
+	})
+}
+
