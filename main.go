@@ -14,19 +14,29 @@ import (
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.9"
+const version = "0.7.10"
 
 func main() {
+	
+	_ , err := run()
+
+	if err != nil {
+		os.Exit(1)
+	}
+
+	os.Exit(0)
+}
+
+func run() (string, error) {
 
 	var err error = nil
-
 
 	// get number of arguments
 	if len(os.Args) == 1 {
 		banner()
 		color.Red("❌  Missing subcommand.")
 		printUsage()
-		os.Exit(1)
+		return "missing subcommand", fmt.Errorf("missing subcommand")
 	}
 
 	// get the first argument
@@ -35,12 +45,12 @@ func main() {
 	switch arg {
 	case "version", "-version", "--version", "-v":
 		banner()
-		os.Exit(0)
+		return "banner", nil
 
 	case "help", "-help", "--help", "-h":
 		banner()
 		printUsage()
-		os.Exit(0)
+		return "usage", nil
 
 	// bootstrap a new project
 	case "init":
@@ -49,7 +59,7 @@ func main() {
 		if len(os.Args) < 3 {
 			color.Red("❌  Missing argument for init subcommand.")
 			printUsage()
-			os.Exit(1)
+			return "missing argument for init", fmt.Errorf("missing argument for init")
 		}
 
 		err = createProject(os.Args[2])
@@ -89,7 +99,7 @@ func main() {
         if len(os.Args) < 3 {
             color.Red("❌  Missing argument for bump subcommand. Use minor, major, or patch.")
             printUsage()
-            os.Exit(1)
+            return "missing argument for bump", fmt.Errorf("missing argument for bump")
         }
 
         err = versionBump(os.Args[2])
@@ -99,13 +109,14 @@ func main() {
 		banner()
 		color.Red("❌  Unknown subcommand.")
 		printUsage()
-		os.Exit(1)
+		return "unknown subcommand", fmt.Errorf("unknown subcommand")
 	}
 
 	if err != nil {
-		color.Black(fmt.Sprintf("💀 Gopher terminated abnormally with the following error: [ %s ]", err.Error()))
-		os.Exit(1)
+		return "subcommand error", err
 	}
+
+	return "program terminated normally", nil
 }
 
 func printUsage() {
