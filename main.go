@@ -1278,16 +1278,18 @@ func versionBump(what string) error {
     build := parts[2]
 
     // increment the build number
-    if what == "build" || what == "patch" {
-        build = incString(build)
-    } else if what == "minor" {
-        minor = incString(minor)
-        build = "0"
-    } else if what == "major" {
-        major = incString(major)
-        minor = "0"
-        build = "0"
-    }
+	switch what {
+
+	case "build", "patch":
+		build = incString(build)
+	case "minor":
+		minor = incString(minor)
+		build = "0"
+	case "major":
+		major = incString(major)
+		minor = "0"
+		build = "0"
+	}
 
     // create the new version string
     new_version := major + "." + minor + "." + build
