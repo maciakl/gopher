@@ -213,7 +213,7 @@ func replaceInFile(filename string, find string, replace string) error {
 		return err
 	}
 
-	file = bytes.Replace(file, []byte(find), []byte(replace), -1)
+	file = bytes.Replace(file, []byte(find), []byte(replace), 1)
 	err = os.WriteFile(filename, file, 0644)
 	if err != nil {
 		return err
@@ -753,8 +753,7 @@ func generateScoopFile() error {
 		color.Cyan("Adding the sha256 checksum to the manifest file...")
 
 		bin_line := fmt.Sprintf(`    "url": "%s",`, url)
-		new_line := fmt.Sprintf(`    "url": "%s",
-	"hash": "%s",`, url, hash)
+		new_line := fmt.Sprintf(`    "url": "%s", "hash": "%s",`, url, hash)
 
 		err = replaceInFile(scoopfile_path, bin_line, new_line)
 		if err != nil {
