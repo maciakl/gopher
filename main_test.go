@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -1278,13 +1279,156 @@ func createMockExecutable(t *testing.T, dir, name string) {
 		script += "\nexit 0"
 	}
 
-	if err := os.WriteFile(path, []byte(script), 0755); err != nil {
-		t.Fatalf("failed to create mock executable %s: %v", name, err)
+			if err := os.WriteFile(path, []byte(script), 0755); err != nil {
+				t.Fatalf("failed to create mock executable %s: %v", name, err)
+			}
+		}
+	
+	// createMockGitForRelease creates a mock 'git' executable that simulates successful git commands needed for release and info.
+	
+	func createMockGitForRelease(t *testing.T, tmpBinDir string) {
+	
+		var scriptContent string
+	
+		gitPath := filepath.Join(tmpBinDir, "git")
+	
+	
+	
+		if runtime.GOOS == "windows" {
+	
+			gitPath += ".bat"
+	
+			scriptContent = `@echo off
+	
+	rem Git describe for getGitTag
+	
+	if "%~1"=="describe" ( echo v1.0.0 & exit /b 0 )
+	
+	rem Git rev-parse for getGitCommit
+	
+	if "%~1"=="rev-parse" if "%~2"=="--short" ( echo abcdef1 & exit /b 0 )
+	
+	rem Git tag for release tagging
+	
+	if "%~1"=="tag" ( exit /b 0 )
+	
+	rem Git config for getGitOrigin
+	
+	if "%~1"=="config" if "%~2"=="--get" if "%~3"=="remote.origin.url" ( echo https://github.com/testuser/testproject.git & exit /b 0 )
+	
+	rem Git branch for getGitBranch
+	
+	if "%~1"=="branch" if "%~2"=="--show-current" ( echo main & exit /b 0 )
+	
+	rem Git diff for getGitClean
+	
+	if "%~1"=="diff" if "%~2"=="--quiet" ( exit /b 0 )
+	
+	exit /b 0
+	
+	`
+	
+		} else {
+	
+			scriptContent = `#!/bin/sh
+	
+	if [ "	
+	" = "describe" ] && [ "$2" = "--tags" ]; then echo "v1.0.0"; exit 0; fi
+	
+	if [ "	
+	" = "rev-parse" ] && [ "$2" = "--short" ]; then echo "abcdef1"; exit 0; fi
+	
+	if [ "	
+	" = "tag" ]; then exit 0; fi
+	
+	if [ "	
+	" = "config" ] && [ "$2" = "--get" ] && [ "$3" = "remote.origin.url" ]; then echo "https://github.com/testuser/testproject.git"; exit 0; fi
+	
+	if [ "	
+	" = "branch" ] && [ "$2" = "--show-current" ]; then echo "main"; exit 0; fi
+	
+	if [ "	
+	" = "diff" ] && [ "$2" = "--quiet" ]; then exit 0; fi
+	
+	exit 0
+	
+	`
+	
+		}
+	
+	
+	
+		if err := os.WriteFile(gitPath, []byte(scriptContent), 0755); err != nil {
+	
+			t.Fatalf("failed to create mock git executable for release and info: %v", err)
+	
+		}
+	
 	}
-}
-
-func TestCreateProject(t *testing.T) {
-	// Redirect output
+	
+	
+	
+	// createMockGoForInstall creates a mock 'go' executable that simulates a successful 'go build'.
+	
+	func createMockGoForInstall(t *testing.T, tmpBinDir, projectName string) {
+	
+		var scriptContent string
+	
+		goPath := filepath.Join(tmpBinDir, "go")
+	
+	
+	
+		var binaryName = projectName
+	
+		if runtime.GOOS == "windows" {
+	
+			binaryName += ".exe"
+	
+			goPath += ".bat"
+	
+			scriptContent = `@echo off
+	
+	if "%~1"=="build" ( echo. > "` + binaryName + `" & exit /b 0 )
+	
+	rem Handles 'go mod init' just in case
+	
+	if /I "%~1"=="mod" if /I "%~2"=="init" echo module %3 > go.mod
+	
+	exit /b 0
+	
+	`
+	
+		} else {
+	
+			scriptContent = `#!/bin/sh
+	
+	if [ "	
+	" = "build" ]; then touch "` + binaryName + `"; exit 0; fi
+	
+	# Handles 'go mod init' just in case
+	
+	if [ "	
+	" = "mod" ] && [ "$2" = "init" ]; then echo "module $3" > go.mod; fi
+	
+	exit 0
+	
+	`
+	
+		}
+	
+	
+	
+		if err := os.WriteFile(goPath, []byte(scriptContent), 0755); err != nil {
+	
+			t.Fatalf("failed to create mock go executable for install: %v", err)
+	
+		}
+	
+	}
+	
+			
+	
+			func TestCreateProject(t *testing.T) {	// Redirect output
 	oldOut := color.Output
 	defer func() { color.Output = oldOut }()
 	var buff bytes.Buffer
@@ -2076,89 +2220,433 @@ func TestRunFunction(t *testing.T) {
 	oldArgs := os.Args
 	defer func() { os.Args = oldArgs }()
 
-	// Redirect output to avoid polluting test logs
-	oldOut := color.Output
-	defer func() { color.Output = oldOut }()
-	var buff bytes.Buffer
-	color.Output = &buff
+	captureOutput := func(f func()) string {
+		oldColorOut := color.Output
+		oldStdout := os.Stdout
+		oldStderr := os.Stderr
+		r, w, _ := os.Pipe()
+		
+		color.Output = w
+		os.Stdout = w
+		os.Stderr = w
 		color.NoColor = true
-	
-		devNull, _ := os.Open(os.DevNull)
-		defer devNull.Close()
-		origStdout := os.Stdout
-		origStderr := os.Stderr
-		os.Stdout = devNull
-		os.Stderr = devNull
-		defer func() {
-			os.Stdout = origStdout
-			os.Stderr = origStderr
-		}()
+
+		f()
+
+		w.Close()
+		
+		color.Output = oldColorOut
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
+		
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		return buf.String()
+	}
+
 	t.Run("no-subcommand", func(t *testing.T) {
 		os.Args = []string{"cmd"}
-		_, err := run()
-		if err == nil {
-			t.Error("expected an error, got nil")
-		}
-		if err.Error() != "missing subcommand" {
-			t.Errorf("expected error message 'missing subcommand', got %q", err.Error())
+		output := captureOutput(func() {
+			_, err := run()
+			if err == nil {
+				t.Error("expected an error, got nil")
+			}
+			if err.Error() != "missing subcommand" {
+				t.Errorf("expected error message 'missing subcommand', got %q", err.Error())
+			}
+		})
+		if !strings.Contains(output, "Missing subcommand") {
+			t.Errorf("expected output to contain 'Missing subcommand', but it did not. Full output:\n%s", output)
 		}
 	})
 
 	t.Run("version-flag", func(t *testing.T) {
 		os.Args = []string{"cmd", "version"}
-		s, err := run()
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		captureOutput(func() {
+			s, err := run()
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
 
-		if s != "banner" {
-			t.Errorf("expected 'banner', got %q", s)
-		}
+			if s != "banner" {
+				t.Errorf("expected 'banner', got %q", s)
+			}
+		})
 	})
 
 	t.Run("help-flag", func(t *testing.T) {
 		os.Args = []string{"cmd", "help"}
-		s, err := run()
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		if s != "usage" {
-			t.Errorf("expected 'usage', got %q", s)
-		}
+		captureOutput(func() {
+			s, err := run()
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if s != "usage" {
+				t.Errorf("expected 'usage', got %q", s)
+			}
+		})
 	})
 
 	t.Run("init-missing-arg", func(t *testing.T) {
 		os.Args = []string{"cmd", "init"}
-		_, err := run()
-		if err == nil {
-			t.Error("expected an error, got nil")
-		}
-		if err.Error() != "missing argument for init" {
-			t.Errorf("expected error message 'missing argument for init', got %q", err.Error())
+		output := captureOutput(func() {
+			_, err := run()
+			if err == nil {
+				t.Error("expected an error, got nil")
+			}
+			if err.Error() != "missing argument for init" {
+				t.Errorf("expected error message 'missing argument for init', got %q", err.Error())
+			}
+		})
+		if !strings.Contains(output, "Missing argument for init") {
+			t.Errorf("expected output to contain 'Missing argument for init', but it did not. Full output:\n%s", output)
 		}
 	})
 
 	t.Run("unknown-subcommand", func(t *testing.T) {
 		os.Args = []string{"cmd", "nonexistent"}
-		_, err := run()
-		if err == nil {
-			t.Error("expected an error, got nil")
-		}
-		if err.Error() != "unknown subcommand" {
-			t.Errorf("expected error message 'unknown subcommand', got %q", err.Error())
+		output := captureOutput(func() {
+			_, err := run()
+			if err == nil {
+				t.Error("expected an error, got nil")
+			}
+			if err.Error() != "unknown subcommand" {
+				t.Errorf("expected error message 'unknown subcommand', got %q", err.Error())
+			}
+		})
+		if !strings.Contains(output, "Unknown subcommand") {
+			t.Errorf("expected output to contain 'Unknown subcommand', but it did not. Full output:\n%s", output)
 		}
 	})
 
 	t.Run("bump-missing-arg", func(t *testing.T) {
 		os.Args = []string{"cmd", "bump"}
-		_, err := run()
-		if err == nil {
-			t.Error("expected an error, got nil")
-		}
-		if err.Error() != "missing argument for bump" {
-			t.Errorf("expected error message 'missing argument for bump', got %q", err.Error())
+		output := captureOutput(func() {
+			_, err := run()
+			if err == nil {
+				t.Error("expected an error, got nil")
+			}
+			if err.Error() != "missing argument for bump" {
+				t.Errorf("expected error message 'missing argument for bump', got %q", err.Error())
+			}
+		})
+		if !strings.Contains(output, "Missing argument for bump") {
+			t.Errorf("expected output to contain 'Missing argument for bump', but it did not. Full output:\n%s", output)
 		}
 	})
 
+	t.Run("make-success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Create a dummy go.mod for createMakefile to succeed
+		if err := os.WriteFile("go.mod", []byte("module myproject"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		os.Args = []string{"cmd", "make"}
+		output := captureOutput(func() {
+			_, err := run()
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+		})
+
+		// Verify Makefile was created
+		if _, err := os.Stat(filepath.Join(tmpDir, "Makefile")); os.IsNotExist(err) {
+			t.Error("Makefile was not created")
+		}
+
+		// Verify output
+		expectedOutput := "Makefile created successfully."
+		if !strings.Contains(output, expectedOutput) {
+			t.Errorf("expected output to contain %q, got %q", expectedOutput, output)
+		}
+	})
+
+	t.Run("just-success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Create a dummy go.mod for createJustfile to succeed
+		if err := os.WriteFile("go.mod", []byte("module myproject"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		os.Args = []string{"cmd", "just"}
+		output := captureOutput(func() {
+			_, err := run()
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+		})
+		
+		// Verify Justfile was created
+		if _, err := os.Stat(filepath.Join(tmpDir, "Justfile")); os.IsNotExist(err) {
+			t.Error("Justfile was not created")
+		}
+
+		// Verify output
+		expectedOutput := "Justfile created successfully."
+		if !strings.Contains(output, expectedOutput) {
+			t.Errorf("expected output to contain %q, got %q", expectedOutput, output)
+		}
+	})
+
+	t.Run("release-success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Setup mock executables in a temp bin dir
+		tmpBinDir := filepath.Join(tmpDir, "bin")
+		os.Mkdir(tmpBinDir, 0755)
+		originalPath := os.Getenv("PATH")
+		t.Setenv("PATH", tmpBinDir+string(os.PathListSeparator)+originalPath) // Prepend mock bin dir
+		defer os.Setenv("PATH", originalPath)
+
+		createMockExecutable(t, tmpBinDir, "go")
+		createMockGitForRelease(t, tmpBinDir) // Use the new specialized git mock
+		// Mock goreleaser to succeed
+		goreleaserPath := filepath.Join(tmpBinDir, "goreleaser")
+		if runtime.GOOS == "windows" {
+			goreleaserPath += ".bat"
+		}
+		if err := os.WriteFile(goreleaserPath, []byte("exit 0"), 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create dummy go.mod and main.go for release to succeed
+		if err := os.WriteFile("go.mod", []byte("module myreleaseproject"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile("main.go", []byte("package main\nconst version = \"1.0.0\""), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		os.Args = []string{"cmd", "release"}
+		output := captureOutput(func() {
+			_, err := run()
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+		})
+
+		expectedOutput := "Project released successfully."
+		if !strings.Contains(output, expectedOutput) {
+			t.Errorf("expected output to contain %q, got %q", expectedOutput, output)
+		}
+	})
+
+	t.Run("info-success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Setup mock executables in a temp bin dir
+		tmpBinDir := filepath.Join(tmpDir, "bin")
+		os.Mkdir(tmpBinDir, 0755)
+		originalPath := os.Getenv("PATH")
+		t.Setenv("PATH", tmpBinDir+string(os.PathListSeparator)+originalPath) // Prepend mock bin dir
+		defer os.Setenv("PATH", originalPath)
+
+		createMockExecutable(t, tmpBinDir, "go")
+		createMockGitForRelease(t, tmpBinDir) // Use the specialized git mock
+
+		// Create dummy go.mod and main.go for getInfo to succeed
+		if err := os.WriteFile("go.mod", []byte("module github.com/testuser/testproject"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile("main.go", []byte("package main\nconst version = \"1.0.0\""), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		os.Args = []string{"cmd", "info"}
+		output := captureOutput(func() {
+			_, err := run()
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+		})
+
+		// Verify output contains key info elements
+		expectedSubstrings := []string{
+			"Project information:",
+			"Project Name:", "testproject",
+			"Version:", "1.0.0",
+			"Git tag:", "v1.0.0", "(abcdef1)",
+			"Git HEAD:", "abcdef1",
+			"Git branch:", "main",
+			"Git State:", "clean",
+			"Github user:", "testuser",
+			"Github URI:", "github.com/testuser/testproject",
+			"Github repo:", "https://github.com/testuser/testproject.git",
+		}
+
+		for _, s := range expectedSubstrings {
+			if !strings.Contains(output, s) {
+				t.Errorf("expected output to contain %q, but did not. Full output:\n%s", s, output)
+			}
+		}
+	})
+
+	t.Run("scoop-success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Create necessary files and directories
+		os.Mkdir("dist", 0755)
+		projectName := "testscoop"
+		username := "testuser"
+		version := "1.0.0"
+		hash := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890" // SHA256 hash length
+
+		if err := os.WriteFile("go.mod", []byte(fmt.Sprintf("module github.com/%s/%s", username, projectName)), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile("main.go", []byte(fmt.Sprintf("package main\nconst version = \"%s\"", version)), 0644); err != nil {
+			t.Fatal(err)
+		}
+		checksumContent := fmt.Sprintf("%s  %s_%s_Windows_x86_64.zip", hash, projectName, version)
+		checksumFilePath := filepath.Join("dist", fmt.Sprintf("%s_%s_checksums.txt", projectName, version))
+		if err := os.WriteFile(checksumFilePath, []byte(checksumContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		t.Setenv("GOPHER_USERNAME", username)
+		defer os.Unsetenv("GOPHER_USERNAME") // Clean up env var
+
+		os.Args = []string{"cmd", "scoop"}
+		output := captureOutput(func() {
+			_, err := run()
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+		})
+
+		// Verify scoop file was created
+		scoopFilePath := filepath.Join(tmpDir, "dist", projectName+".json")
+		if _, err := os.Stat(scoopFilePath); os.IsNotExist(err) {
+			t.Error("Scoop manifest file was not created")
+		}
+
+		// Verify content
+		scoopContent, err := os.ReadFile(scoopFilePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expectedURL := fmt.Sprintf("https://github.com/%s/%s/releases/download/v%s/%s_%s_Windows_x86_64.zip", username, projectName, version, projectName, version)
+		
+		expectedManifest := fmt.Sprintf(`{
+    "version": "%s",
+    "description": "A new scoop package",
+    "homepage": "https://github.com/%s/%s",
+    "checkver": "github",
+    "url": "%s",
+	"hash": "%s",
+    "bin": "%s",
+    "license": "freeware"
+}`, version, username, projectName, expectedURL, hash, projectName+".exe")
+
+		normalizedExpected := strings.ReplaceAll(expectedManifest, "\r\n", "\n")
+		normalizedGot := strings.ReplaceAll(string(scoopContent), "\r\n", "\n")
+
+		if normalizedGot != normalizedExpected {
+			t.Errorf("scoop file content mismatch.\nExpected:\n%s\nGot:\n%s", normalizedExpected, normalizedGot)
+		}
+		
+		// Verify output
+		expectedOutput := "Scoop manifest file testscoop.json created successfully."
+		if !strings.Contains(output, expectedOutput) {
+			t.Errorf("expected output to contain %q, got %q", expectedOutput, output)
+		}
+	})
+
+	t.Run("install-success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		originalDir, _ := os.Getwd()
+		os.Chdir(tmpDir)
+		defer os.Chdir(originalDir)
+
+		// Setup mock executables in a temp bin dir
+		tmpBinDir := filepath.Join(tmpDir, "bin")
+		os.Mkdir(tmpBinDir, 0755)
+		originalPath := os.Getenv("PATH")
+		t.Setenv("PATH", tmpBinDir+string(os.PathListSeparator)+originalPath) // Prepend mock bin dir
+		defer os.Setenv("PATH", originalPath)
+
+		projectName := "myinstallproject"
+		createMockGoForInstall(t, tmpBinDir, projectName) // Use the specialized go mock
+
+		// Create dummy go.mod and main.go for installProject to succeed
+		if err := os.WriteFile("go.mod", []byte(fmt.Sprintf("module %s", projectName)), 0644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile("main.go", []byte("package main\nfunc main() {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create a custom install path
+		installDir := filepath.Join(tmpDir, "custom_bin")
+		os.Mkdir(installDir, 0755)
+		t.Setenv("GOPHER_INSTALLPATH", installDir)
+		defer os.Unsetenv("GOPHER_INSTALLPATH")
+
+		os.Args = []string{"cmd", "install"}
+		output := captureOutput(func() {
+			_, err := run()
+			if err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+		})
+
+		// Verify the binary was copied
+		binaryName := projectName
+		if runtime.GOOS == "windows" {
+			binaryName += ".exe"
+		}
+		finalPath := filepath.Join(installDir, binaryName)
+		if _, err := os.Stat(finalPath); os.IsNotExist(err) {
+			t.Errorf("expected binary %q to be installed in %q, but it was not found", binaryName, installDir)
+		}
+
+		// Verify output
+		expectedOutput := fmt.Sprintf("%s installed successfully into %s", projectName, installDir)
+		if !strings.Contains(output, expectedOutput) {
+			t.Errorf("expected output to contain %q, got %q", expectedOutput, output)
+		}
+	})
 }
+
+
+
+
+
+
+
+											
+
+															
+
+											
+
+													
+
+											
+
+									
+
+					
+
+			
+
+	
 
