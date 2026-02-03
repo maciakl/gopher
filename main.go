@@ -9,12 +9,13 @@ import (
 	"runtime"
 	"strings"
     "strconv"
+	"path/filepath"
 
 	"github.com/fatih/color"
 	cp "github.com/otiai10/copy"
 )
 
-const version = "0.7.12"
+const version = "0.7.13"
 
 // struct for capturing project info
 type Info struct {
@@ -616,11 +617,11 @@ func release() error {
 	cmd = exec.Command("goreleaser", "release", "--clean")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	e = cmd.Run()
+	egr := cmd.Run()
 
-	if e != nil {
+	if  egr != nil {
 		fmt.Print("💥 ")
-		color.Red(e.Error())
+		color.Red(egr.Error())
 
 		// delete the tag we just created
 		color.Cyan("Deleting the git tag v" + version + "...")
@@ -634,6 +635,8 @@ func release() error {
 			color.Yellow("⚠  Failed to remove tag, run git tag v" + version + " manually before re-running this command")
 			return e
 		}
+
+		return egr
 	}
 
 	color.Blue("🆗 goreleaser ran successfully.")
@@ -906,7 +909,7 @@ func installProject() error {
             // get the user's home directory
             color.Cyan("Getting the user's home directory...")
             home := os.Getenv("USERPROFILE")
-            installpath = home + "\\bin"
+            installpath = filepath.Join(home, "bin")
         }
         color.Blue("🆗 Attempting to install to: " + installpath)
 
@@ -915,6 +918,14 @@ func installProject() error {
 		if _, err := os.Stat(installpath); os.IsNotExist(err) {
 			fmt.Print("💥 ")
 			color.Red("The " + installpath + " directory does not exist. Please create it and add it to your path first.")
+			return err
+		}
+
+		// check if the binary exists
+		color.Cyan("Checking if the binary exists...")
+		if _, err := os.Stat(name + ".exe"); os.IsNotExist(err) {
+			fmt.Print("💥 ")
+			color.Red("The binary " + name + ".exe does not exist. Please build the project first.")
 			return err
 		}
 
@@ -937,7 +948,8 @@ func installProject() error {
             // get the user's home directory
             color.Cyan("Getting the user's home directory...")
             home := os.Getenv("HOME")
-            installpath = home + "/bin"
+			// safely join path
+            installpath = filepath.Join(home, "bin")
         }
 
         color.Blue("🆗 Attempting to install to: " + installpath)
@@ -947,6 +959,14 @@ func installProject() error {
 		if _, err := os.Stat(installpath); os.IsNotExist(err) {
 			fmt.Print("💥 ")
 			color.Red("The " + installpath + " directory does not exist. Please create it and add it to your path first.")
+			return err
+		}
+
+		// check if the binary exists
+		color.Cyan("Checking if the binary exists...")
+		if _, err := os.Stat(name); os.IsNotExist(err) {
+			fmt.Print("💥 ")
+			color.Red("The binary " + name + " does not exist. Please build the project first.")
 			return err
 		}
 
