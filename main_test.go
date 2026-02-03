@@ -821,7 +821,7 @@ func TestCheck(t *testing.T) {
 			t.Error("expected an error, got nil")
 		}
 		// Check for the actual error message from exec.LookPath
-		if err != nil && !strings.Contains(err.Error(), "executable file not found in %PATH%") {
+		if err != nil && !strings.Contains(err.Error(), "executable file not found") {
 			t.Errorf("expected 'executable file not found in %%PATH%%' error, got %v", err)
 		}
 	})
@@ -848,7 +848,7 @@ func TestCheck(t *testing.T) {
 		if err == nil {
 			t.Error("expected an error, got nil")
 		}
-		if err != nil && !strings.Contains(err.Error(), "executable file not found in %PATH%") {
+		if err != nil && !strings.Contains(err.Error(), "executable file not found") {
 			t.Errorf("expected 'executable file not found in %%PATH%%' error, got %v", err)
 		}
 	})
@@ -883,7 +883,7 @@ func TestCheck(t *testing.T) {
 		if err == nil {
 			t.Error("expected an error, got nil")
 		}
-		if err != nil && !strings.Contains(err.Error(), "executable file not found in %PATH%") {
+		if err != nil && !strings.Contains(err.Error(), "executable file not found") {
 			t.Errorf("expected 'executable file not found in %%PATH%%' error, got %v", err)
 		}
 	})
@@ -1332,23 +1332,17 @@ func createMockExecutable(t *testing.T, dir, name string) {
 	
 			scriptContent = `#!/bin/sh
 	
-	if [ "	
-	" = "describe" ] && [ "$2" = "--tags" ]; then echo "v1.0.0"; exit 0; fi
+	if [ "$1" = "describe" ]; then echo "v1.0.0"; exit 0; fi
 	
-	if [ "	
-	" = "rev-parse" ] && [ "$2" = "--short" ]; then echo "abcdef1"; exit 0; fi
+	if [ "$1" = "rev-parse" ] && [ "$2" = "--short" ]; then echo "abcdef1"; exit 0; fi
 	
-	if [ "	
-	" = "tag" ]; then exit 0; fi
+	if [ "$1" = "tag" ]; then exit 0; fi
 	
-	if [ "	
-	" = "config" ] && [ "$2" = "--get" ] && [ "$3" = "remote.origin.url" ]; then echo "https://github.com/testuser/testproject.git"; exit 0; fi
+	if [ "$1" = "config" ] && [ "$2" = "--get" ] && [ "$3" = "remote.origin.url" ]; then echo "https://github.com/testuser/testproject.git"; exit 0; fi
 	
-	if [ "	
-	" = "branch" ] && [ "$2" = "--show-current" ]; then echo "main"; exit 0; fi
+	if [ "$1" = "branch" ] && [ "$2" = "--show-current" ]; then echo "main"; exit 0; fi
 	
-	if [ "	
-	" = "diff" ] && [ "$2" = "--quiet" ]; then exit 0; fi
+	if [ "$1" = "diff" ] && [ "$2" = "--quiet" ]; then exit 0; fi
 	
 	exit 0
 	
@@ -1670,6 +1664,12 @@ func TestInstallProject(t *testing.T) {
 		t.Setenv("HOME", homeDir)
 		t.Setenv("USERPROFILE", homeDir)
 
+		e := os.WriteFile(projectName, []byte("exit 0"), 0644)
+		if e != nil {
+			t.Fatalf("failed to create dummy binary: %v", e)
+		}
+		
+
 		err := installProject()
 		if err != nil {
 			t.Fatalf("installProject failed unexpectedly: %v", err)
@@ -1700,6 +1700,11 @@ func TestInstallProject(t *testing.T) {
 		installDir := t.TempDir()
 		t.Setenv("GOPHER_INSTALLPATH", installDir)
 		defer os.Unsetenv("GOPHER_INSTALLPATH")
+
+		e := os.WriteFile(projectName, []byte("exit 0"), 0644)
+		if e != nil {
+			t.Fatalf("failed to create dummy binary: %v", e)
+		}
 
 		err := installProject()
 		if err != nil {
@@ -1996,10 +2001,8 @@ func TestRelease(t *testing.T) {
 		os.WriteFile("main.go", []byte("package main\nconst version = \"1.0.0\""), 0644)
 
 		err := release()
-		// The original function has a bug where it doesn't return the error from goreleaser
-		// if the tag deletion is successful. The test is adjusted to expect nil.
-		if err != nil {
-			t.Errorf("expected nil error due to bug in release function, but got: %v", err)
+		if err == nil {
+			t.Errorf("expected an error when goreleaser fails, but got nil")
 		}
 
 		// Verify that the 'git tag -d' command was attempted.
@@ -2416,9 +2419,13 @@ func TestRunFunction(t *testing.T) {
 		goreleaserPath := filepath.Join(tmpBinDir, "goreleaser")
 		if runtime.GOOS == "windows" {
 			goreleaserPath += ".bat"
-		}
-		if err := os.WriteFile(goreleaserPath, []byte("exit 0"), 0755); err != nil {
-			t.Fatal(err)
+			if err := os.WriteFile(goreleaserPath, []byte("exit 0"), 0755); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			if err := os.WriteFile(goreleaserPath, []byte("#!/bin/sh\nexit 0"), 0755); err != nil {
+				t.Fatal(err)
+			}
 		}
 
 		// Create dummy go.mod and main.go for release to succeed
@@ -2590,7 +2597,12 @@ func TestRunFunction(t *testing.T) {
 		if err := os.WriteFile("go.mod", []byte(fmt.Sprintf("module %s", projectName)), 0644); err != nil {
 			t.Fatal(err)
 		}
+
 		if err := os.WriteFile("main.go", []byte("package main\nfunc main() {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.WriteFile(projectName, []byte("exit 0"), 0644); err != nil {
 			t.Fatal(err)
 		}
 
@@ -2602,6 +2614,7 @@ func TestRunFunction(t *testing.T) {
 
 		os.Args = []string{"cmd", "install"}
 		output := captureOutput(func() {
+			os.Chdir(tmpDir)
 			_, err := run()
 			if err != nil {
 				t.Errorf("expected no error, got %v", err)
