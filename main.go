@@ -1036,25 +1036,63 @@ func createJustfile() error {
 	color.Cyan("Generating the Justfile content...")
 	content := fmt.Sprintf(`BINARY_NAME := "%s"
 
+# defaults to build
+all: build
+
+# build the project
+[group('build')]
 build: tidy
 	go build
 
+# clean build artifacts
+[group('util')]
 clean:
-	fo clean
-	rm -rf dist
-    
+	go clean
+	-rm -rf dist
+	-rm -rf coverage*
 
+# run the project
+[group('build')]
 run: build
 	./{{BINARY_NAME}}
 
+# tidy up the go.mod and go.sum files
+[group('build')]
 tidy:
 	go mod tidy
 	go fmt ./...
 	go vet ./...
 	go mod verify
 
+# run tests
+[group('test')]
 test: build
-	go test`, name)
+	go test -v
+
+# calculate test coverage
+[group('test')]
+coverage:
+    go test -coverprofile=coverage ./...
+    go tool cover -html=coverage -o coverage.html
+
+# check coverage in a browser
+[macos]
+[group('test')]
+check: coverage
+	open coverage.html
+
+# check coverage in a browser
+[windows]
+[group('test')]
+check: coverage
+   pwsh -c Start-Process coverage.html 
+
+# release the project and generate scoop file
+[group('release')]
+release: build
+	gopher release
+	gopher scoop
+`, name)
 
 	color.Cyan("Creating the Justfile file on disk...")
 	jfile, err := os.Create("Justfile")
@@ -1089,6 +1127,14 @@ import (
 const version = "0.1.0"
 
 func main() {
+	err := run()
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+}
+
+func run() error { 
 
     if len(os.Args) > 1 {
         switch os.Args[1] {
@@ -1098,15 +1144,18 @@ func main() {
             Usage()
         default:
             Usage()
+			return fmt.Errorf("unknown argument: %s", os.Args[1])
         } 
     } else {
         Usage()
+		return fmt.Errorf("no arguments provided")
     }
+
+	return nil
 }
 
 func Version() {
     fmt.Println(filepath.Base(os.Args[0]), "version", version)
-    os.Exit(0)
 }
 
 func Usage() {
@@ -1114,7 +1163,6 @@ func Usage() {
     fmt.Println("Options:")
     fmt.Println("  -v, --version    Print version information and exit")
     fmt.Println("  -h, --help       Print this message and exit")
-    os.Exit(0)
 }`
 
 	color.Cyan("Creating the " + name + ".go file on disk...")
