@@ -25,7 +25,7 @@ tidy:
 # run the tests in verbose mode
 [group('test')]
 test:
-    go test -v ./...
+    go test -v ./... | clrz
 
 # generate code coverage report
 [group('test')]
