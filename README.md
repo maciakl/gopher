@@ -238,9 +238,27 @@ Sample screenshot of using `gopher` to create a go project, generate a scoop man
 
 ## Installing
 
+### Cross Platform
+
 Install via go:
  
     go install github.com/maciakl/gopher@latest
+
+### Linux
+
+Use [grab](https://github.com/maciakl/grab):
+
+    grab maciakl/gopher
+
+### macOS
+
+Use `homebrew`:
+
+    brew tap maciakl/tap
+    brew trust maciakl/tap
+    brew install gopher
+
+### Windows
 
 On Windows, this tool is distributed via `scoop` (see [scoop.sh](https://scoop.sh)).
 
